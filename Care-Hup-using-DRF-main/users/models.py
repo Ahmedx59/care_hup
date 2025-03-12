@@ -43,6 +43,7 @@ class DoctorNurseProfile(models.Model):
     card = models.FileField(upload_to='image_card', max_length=100 , blank=True, null=True)
     specialty = models.ForeignKey('SpecialtyDoctor', related_name='doctor_specialty', on_delete=models.SET_NULL , null=True , blank=True)
     certificates = models.FileField(upload_to='image_certificates', max_length=100 ,blank=True)
+    city = models.ForeignKey('City', related_name='city', on_delete=models.SET_NULL , null=True , blank=True) 
 
     def __str__(self):
         return f"profile {self.id} for {str(self.user)}"
@@ -70,10 +71,11 @@ class Governorate(models.Model):
 
 class City(models.Model):
     name = models.CharField(max_length=100)
-    governorate = models.ForeignKey(Governorate, on_delete=models.CASCADE)
+    governorate = models.ForeignKey(Governorate , related_name="city" , on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
+
 
 @receiver(post_save , sender=User)
 def profile(instance , created ,  *args, **kwargs):
