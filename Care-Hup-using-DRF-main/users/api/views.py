@@ -16,8 +16,8 @@ from .serializers import (
     ListDoctorSerializer ,
     ListNurseSerializer ,
     SignUpDoctorNurseSerializer ,
-    CitySerializer,
-    GovernorateSerializer,
+    UsersCitySerializer,
+    UsersGovernorateSerializer,
 )
 
 from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate
@@ -206,14 +206,14 @@ class ChooseGovernorate(
     viewsets.GenericViewSet):
 
     queryset = Governorate.objects.all()
-    serializer_class = GovernorateSerializer
+    serializer_class = UsersGovernorateSerializer
 
 
 class ChooseCity(
     mixins.ListModelMixin,
     viewsets.GenericViewSet):
 
-    serializer_class = CitySerializer
+    serializer_class = UsersCitySerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):
