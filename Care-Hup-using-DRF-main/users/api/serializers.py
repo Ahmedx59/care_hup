@@ -241,13 +241,13 @@ class ListNurseSerializer(serializers.ModelSerializer):
         fields = ['user','price']
 
 
-class GovernorateSerializer(serializers.ModelSerializer):
+class UsersGovernorateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Governorate
         fields = '__all__'
 
 
-class CitySerializer(serializers.ModelSerializer):
+class UsersCitySerializer(serializers.ModelSerializer):
     class Meta:
         model = City
         fields = '__all__'
