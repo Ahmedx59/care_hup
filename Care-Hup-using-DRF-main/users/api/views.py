@@ -19,6 +19,7 @@ from .serializers import (
     CitySerializer,
     GovernorateSerializer,
 )
+
 from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate
 
 
