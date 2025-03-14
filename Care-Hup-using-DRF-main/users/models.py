@@ -57,7 +57,7 @@ class SpecialtyDoctor(models.Model):
 
 class PatientProfile(models.Model):
     user = models.OneToOneField(User , on_delete=models.CASCADE , related_name='patient_profile')
-    chronic_diseases = models.TextField(blank=True)
+    chronic_diseases = models.TextField(blank=True,null=True)
     
     def __str__(self):
         return f"profile {self.id} for {str(self.user)}"
