@@ -1,5 +1,4 @@
 from uuid import uuid4
-
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.core.validators import MinLengthValidator
