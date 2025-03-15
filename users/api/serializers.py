@@ -20,15 +20,20 @@ class SpecialtySerializer(serializers.ModelSerializer):
         model = SpecialtyDoctor
         fields = '__all__'
 
-class SingUpSerializer(serializers.Serializer):
+class SingUpSerializer(serializers.ModelSerializer):
     username=serializers.CharField(required = True)
     email = serializers.CharField(required = True)
     password = serializers.CharField(write_only = True , validators=[MinLengthValidator(8)] , required = True)
     confirm_password = serializers.CharField(required = True , write_only = True)
-    user_type = serializers.CharField(required = True)
+    user_type = serializers.ChoiceField(choices=User.User_Type.choices , required = True)
     gender = serializers.CharField(required = True)
     phone_number = serializers.IntegerField(required = True)
     birth_date = serializers.DateTimeField(required = True)
+    class Meta:
+        model = PatientProfile
+        exclude = ('user',)
+
+        # fields = ('chronic_diseases','user_type')
 
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -44,6 +49,8 @@ class SingUpSerializer(serializers.Serializer):
         validated_data['is_active'] = False
         validated_data['activation_code'] = randint(1000,9999)
 
+        chronic_diseases= validated_data.pop('chronic_diseases')
+
         send_mail(
             f"Activation Code ",
             f"welcome {validated_data['username']}\n Here is the activation code : {validated_data['activation_code']}.",
@@ -52,7 +59,9 @@ class SingUpSerializer(serializers.Serializer):
             fail_silently=False,
         )
         user = User.objects.create_user(**validated_data)
-
+        user_profile = PatientProfile.objects.filter(user = user).first()
+        user_profile.chronic_diseases = chronic_diseases
+        
         return {}
     
 class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
