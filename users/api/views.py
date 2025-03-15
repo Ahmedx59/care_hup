@@ -20,7 +20,7 @@ from .serializers import (
     UsersGovernorateSerializer,
 )
 
-from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate
+from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate 
 
 
 class AuthUser(
@@ -142,9 +142,9 @@ class UserProfile(viewsets.GenericViewSet):
             print(user,'='*100)
             serializer = ProfileDoctorAndNurseSerializer(data = data)
         
-        if user.user_type == User.User_Type.PATIENT:
-            print(user,'*'*100)
-            serializer = PatientProfileSerializer(data = data)
+        # if user.user_type == User.User_Type.PATIENT:
+        #     print(user,'*'*100)
+        #     serializer = PatientProfileSerializer(data = data)
 
             serializer.is_valid(raise_exception = True)
             serializer.save()
@@ -221,3 +221,9 @@ class ChooseCity(
         if governorate_id:
             return City.objects.filter(governorate_id=governorate_id)  
         return City.objects.all()
+    
+class SpecialtyDoctorViewSet(
+    mixins.ListModelMixin,
+    viewsets.GenericViewSet
+    ):
+    ''

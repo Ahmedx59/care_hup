@@ -12,10 +12,13 @@ from rest_framework import serializers
 from random import randint
 from datetime import datetime , timedelta
    
-from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate
+from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate , SpecialtyDoctor
 
 
-
+class SpecialtySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SpecialtyDoctor
+        fields = '__all__'
 
 class SingUpSerializer(serializers.Serializer):
     username=serializers.CharField(required = True)
@@ -100,6 +103,7 @@ class SignUpDoctorNurseSerializer(serializers.Serializer):
         user_profile.experience_year = experience_year
         user_profile.about = about
         user_profile.certificates = certificates
+        user_profile.specialty = specialty
         user_profile.save()
 
         return {}
