@@ -18,9 +18,10 @@ from .serializers import (
     SignUpDoctorNurseSerializer ,
     UsersCitySerializer,
     UsersGovernorateSerializer,
+    SpecialtySerializer
 )
 
-from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate 
+from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate , SpecialtyDoctor
 
 
 class AuthUser(
@@ -42,7 +43,7 @@ class AuthUser(
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception = True)
         serializer.save()
-        return Response({"detail": "User Created Successfully."})
+        return Response({"detail": "check your email."})
     
     @action(detail=False , methods= ['post'],serializer_class = SignUpDoctorNurseSerializer)
     def sign_up_doctor_nurse(self,*args, **kwargs):
@@ -50,7 +51,7 @@ class AuthUser(
         serializer = self.get_serializer(data = data)
         serializer.is_valid(raise_exception = True)
         serializer.save()
-        return Response({'detail':'User Created Successfully.'})    
+        return Response({'detail':'check your email.'})    
 
         
     @action(detail=True , methods=['post'] , serializer_class=UserActivateSerializers)
@@ -226,4 +227,5 @@ class SpecialtyDoctorViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet
     ):
-    ''
+    queryset = SpecialtyDoctor.objects.all()
+    serializer_class = SpecialtySerializer

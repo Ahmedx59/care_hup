@@ -1,7 +1,7 @@
 from django.urls import path 
 from rest_framework.routers import DefaultRouter
 
-from users.api.views import AuthUser , UserProfile , DoctorsViewSet ,NurseViewSet , ProfileViewSet , ChooseGovernorate , ChooseCity , SpecialtyDoctor
+from users.api.views import AuthUser , UserProfile , DoctorsViewSet ,NurseViewSet , ProfileViewSet , ChooseGovernorate , ChooseCity , SpecialtyDoctorViewSet
 
 router = DefaultRouter()
 
@@ -12,7 +12,7 @@ router.register('nurse' , NurseViewSet , basename='nurse')
 router.register('profile' , ProfileViewSet , basename='profile')
 router.register('governorates', ChooseGovernorate , basename='governorates')
 router.register('cities', ChooseCity , basename='cities')
-router.register('specialty', SpecialtyDoctor , basename='specialty')
+router.register('specialty', SpecialtyDoctorViewSet , basename='specialty')
 
 
 

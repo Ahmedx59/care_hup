@@ -55,21 +55,20 @@ class SingUpSerializer(serializers.Serializer):
 
         return {}
     
-class SignUpDoctorNurseSerializer(serializers.Serializer):
+class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
     username = serializers.CharField(required = True)
     email = serializers.CharField(required = True)
     password = serializers.CharField(write_only = True , validators=[MinLengthValidator(8)] , required = True)
     confirm_password = serializers.CharField(required = True , write_only = True)
     user_type = serializers.ChoiceField(choices=User.User_Type.choices , required = True)
-    certificates = serializers.FileField(required = True)
     gender = serializers.ChoiceField(choices=User.GenderType.choices ,required = True)
     phone_number = serializers.IntegerField()
     birth_date = serializers.DateTimeField()
-    price = serializers.IntegerField()
-    about = serializers.CharField()
-    experience_year = serializers.IntegerField()
-    specialty = serializers.CharField()
     
+    class Meta:
+        model = DoctorNurseProfile
+        exclude = ('user',)
+             
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
             raise serializers.ValidationError({'error':'the passwords do not match'})
@@ -89,6 +88,7 @@ class SignUpDoctorNurseSerializer(serializers.Serializer):
         experience_year = validated_data.pop('experience_year')
         price = validated_data.pop('price')
         specialty = validated_data.pop('specialty')
+        city = validated_data.pop('city')
 
         send_mail(
             f"Activation Code ",
@@ -104,6 +104,7 @@ class SignUpDoctorNurseSerializer(serializers.Serializer):
         user_profile.about = about
         user_profile.certificates = certificates
         user_profile.specialty = specialty
+        user_profile.city = city
         user_profile.save()
 
         return {}
