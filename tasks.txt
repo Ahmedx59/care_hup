@@ -1,7 +1,7 @@
 add field offers endpoint
-add field specialty endpoint
+add field specialty endpoint(X)
     in edit my profile
-data in cates , Governorate
+data in cites , Governorate
 
 
 Doctors filter by city , specialty
