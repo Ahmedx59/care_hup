@@ -1,70 +1,126 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from users.models import DoctorNurseProfile, PatientProfile
-from users.models import User
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import get_object_or_404
-from django.db.models import Q
 from .models import Chat, Message
-from .Serializers import ChatSerializer, MessageSerializer
+from .serializers import ChatSerializer, MessageSerializer
+from users.models import User, DoctorNurseProfile, PatientProfile
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 class StartChatView(APIView):
-    def post(self, request, *args, **kwargs):
-        doctor_id = request.data.get('doctor_id')
-        patient_id = request.data.get('patient_id')
-        nurse_id = request.data.get('nurse_id')
+    permission_classes = [IsAuthenticated]
 
-        doctor = get_object_or_404(DoctorNurseProfile, id=doctor_id) if doctor_id else None
-        patient = get_object_or_404(PatientProfile, id=patient_id)
-        nurse = get_object_or_404(DoctorNurseProfile, id=nurse_id) if nurse_id else None
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['target_id'],
+            properties={
+                'target_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+            },
+        ),
+        responses={201: ChatSerializer, 400: "Bad Request"}
+    )
+    def post(self, request):
+        user = request.user
 
-        chat, created = Chat.objects.get_or_create(doctor=doctor, patient=patient, nurse=nurse)
-        return Response(ChatSerializer(chat, context={'request': request}).data, status=status.HTTP_200_OK)
+        # التحقق من أن المستخدم الحالي هو مريض
+        if not hasattr(user, 'patient_profile'):
+            return Response(
+                {"error": "Only patients can start a chat."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        target_id = request.data.get('target_id')
+
+        try:
+            # الحصول على ملف الطبيب/الممرض
+            target_profile = get_object_or_404(DoctorNurseProfile, id=target_id)
+
+            # إنشاء المحادثة
+            chat, created = Chat.objects.get_or_create(
+                patient=user.patient_profile,
+                doctor=target_profile if target_profile.user.user_type == User.User_Type.DOCTOR else None,
+                nurse=target_profile if target_profile.user.user_type == User.User_Type.NURSE else None
+            )
+
+            # إضافة المشاركين إلى المحادثة
+            chat.participants.add(user, target_profile.user)
+
+            return Response(
+                ChatSerializer(chat, context={'request': request}).data,
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class SendMessageView(APIView):
-    def post(self, request, *args, **kwargs):
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['chat_id', 'content'],
+            properties={
+                'chat_id': openapi.Schema(type=openapi.TYPE_INTEGER),
+                'content': openapi.Schema(type=openapi.TYPE_STRING),
+            },
+        ),
+        responses={201: MessageSerializer, 400: "Bad Request"}
+    )
+    def post(self, request):
         chat_id = request.data.get('chat_id')
-        sender_id = request.data.get('sender_id')
         content = request.data.get('content')
-
-        if not content:
-            return Response({"error": "Message content cannot be empty."}, status=status.HTTP_400_BAD_REQUEST)
-
+        
         chat = get_object_or_404(Chat, id=chat_id)
-        sender = get_object_or_404(User, id=sender_id)
 
-        message = Message.objects.create(chat=chat, sender=sender, content=content)
+        # التحقق من أن المستخدم الحالي هو أحد المشاركين في المحادثة
+        if request.user not in chat.participants.all():
+            return Response(
+                {"error": "You are not a participant in this chat."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # إنشاء الرسالة
+        message = Message.objects.create(
+            chat=chat,
+            sender=request.user,
+            content=content
+        )
+        
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
+
 class ChatListView(APIView):
-    def get(self, request, *args, **kwargs):
-        user_id = request.query_params.get('user_id')
-        user = get_object_or_404(User, id=user_id)
-
-        # الحصول على ملف الطبيب/الممرض أو المريض
-        doctor_nurse_profile = getattr(user, 'doctor_profile', None)
-        patient_profile = getattr(user, 'patient_profile', None)
-
-        # تنفيذ الاستعلام بناءً على نوع المستخدم
-        chats = Chat.objects.filter(
-            Q(doctor=doctor_nurse_profile) | 
-            Q(patient=patient_profile) |  # استخدام PatientProfile بدلًا من User
-            Q(nurse=doctor_nurse_profile)
-        )
-
-        serialized_chats = ChatSerializer(chats, many=True, context={'request': request}).data
-        return Response(serialized_chats, status=status.HTTP_200_OK)
-
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        chats = Chat.objects.filter(participants=user).prefetch_related(
+            'messages',
+            'participants',
+            'doctor__user',
+            'nurse__user',
+            'patient__user'
+        ).distinct()
+        
+        return Response(ChatSerializer(
+            chats,
+            many=True,
+            context={'request': request}
+        ).data)
 
 class ChatHistoryView(APIView):
-    def get(self, request, *args, **kwargs):
-        chat_id = kwargs.get('chat_id')
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, chat_id):
+        user = request.user
         chat = get_object_or_404(Chat, id=chat_id)
 
-        messages = chat.messages.order_by('timestamp')
-        serialized_messages = MessageSerializer(messages, many=True).data
+        chat.messages.exclude(sender=user).update(is_read=True)
 
-        if request.user and request.user.is_authenticated:
-            chat.messages.filter(is_read=False).exclude(sender=request.user).update(is_read=True)
-
-        return Response(serialized_messages, status=status.HTTP_200_OK)
+        messages = chat.messages.all()
+        return Response(MessageSerializer(messages, many=True).data)
