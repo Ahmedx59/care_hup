@@ -24,11 +24,11 @@ class AvailableSlotSerializer(serializers.ModelSerializer):
 # ✅ تسلسل بيانات المواعيد
 class AppointmentSerializer(serializers.ModelSerializer):
     doctor_name = serializers.CharField(source='doctor.user.username', read_only=True)
-    specialty = serializers.CharField(source='doctor.specialty.name', required=False, allow_null=True)
+   # specialty = serializers.CharField(source='doctor.specialty.name', required=False, allow_null=True)
 
     class Meta:
         model = Appointment
-        fields = ['id', 'doctor', 'doctor_name', 'specialty', 'date', 'time']
+        fields = ['id', 'doctor', 'doctor_name',  'date', 'time']
 
 
 # ✅ تسلسل بيانات المواعيد الخاصة بالمريض
