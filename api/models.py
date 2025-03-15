@@ -6,7 +6,7 @@ class AvailableSlot(models.Model):
     doctor = models.ForeignKey(DoctorNurseProfile, on_delete=models.CASCADE, related_name="available_slots")
     date = models.DateField()
     time = models.TimeField()
-
+    max_bookings = models.IntegerField(default=3)  
     def __str__(self):
         return f"{self.doctor.user.username} - {self.date} at {self.time}"
 

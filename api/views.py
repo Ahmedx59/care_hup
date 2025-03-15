@@ -1,194 +1,413 @@
-from datetime import datetime
+from datetime import date, datetime
+from rest_framework import generics, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework.permissions import IsAuthenticated, BasePermission
+from rest_framework import serializers
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 from .models import AvailableSlot, Appointment
-from users.models import DoctorNurseProfile, PatientProfile
-from .serializers import AvailableSlotSerializer, AppointmentSerializer
+from users.models import DoctorNurseProfile, PatientProfile, User
+from .serializers import (
+    AvailableSlotSerializer,
+    AppointmentSerializer,
+    PatientAppointmentSerializer,
+    PatientPastAppointmentsSerializer,
+    UpcomingAppointmentsSerializer
+)
 
-# إضافة مواعيد للطبيب
+
+# ================ Permissions ================
+class IsDoctor(BasePermission):
+    """✅ التحقق من أن المستخدم طبيب"""
+    def has_permission(self, request, view):
+        return request.user.user_type == User.User_Type.DOCTOR
+
+
+# ================ Doctor Endpoints ================
 class AddAvailableSlots(APIView):
-    def post(self, request, doctor_id):
+    """✅ إضافة مواعيد متاحة للطبيب"""
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_ARRAY,
+            items=openapi.Schema(
+                type=openapi.TYPE_OBJECT,
+                properties={
+                    'date': openapi.Schema(type=openapi.TYPE_STRING, format="date"),
+                    'times': openapi.Schema(
+                        type=openapi.TYPE_ARRAY,
+                        items=openapi.Schema(type=openapi.TYPE_STRING, format="time")
+                    )
+                },
+                required=['date', 'times']
+            ),
+        ),
+        responses={
+            201: "تم الإضافة بنجاح",
+            400: "بيانات غير صالحة",
+            403: "غير مصرح به"
+        }
+    )
+    def post(self, request):
         try:
-            doctor = DoctorNurseProfile.objects.get(id=doctor_id)
-        except DoctorNurseProfile.DoesNotExist:
-            return Response({"error": "Doctor not found"}, status=status.HTTP_404_NOT_FOUND)
+            doctor = request.user.doctor_profile
+        except AttributeError:
+            return Response(
+                {"error": "المستخدم ليس طبيبًا"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        data = request.data
-        days_and_times = data.get('days_and_times')  # قائمة الأيام والساعات
+        if not isinstance(request.data, list):
+            return Response(
+                {"error": "يجب إرسال البيانات كقائمة"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        if not days_and_times:
-            return Response({"error": "Days and times are required"}, status=status.HTTP_400_BAD_REQUEST)
-
-        for entry in days_and_times:
-            date = entry.get('date')  
-            times = entry.get('times')  
-
+        slots_to_create = []
+        errors = []
+        
+        for slot_data in request.data:
+            date = slot_data.get('date')
+            times = slot_data.get('times', [])
+            
             if not date or not times:
-                return Response({"error": "Each day must have a date and times"}, status=status.HTTP_400_BAD_REQUEST)
-
+                errors.append("كل عنصر يجب أن يحتوي على تاريخ وأوقات")
+                continue
+                
             for time in times:
-                AvailableSlot.objects.create(doctor=doctor, date=date, time=time)
+                if AvailableSlot.objects.filter(
+                    doctor=doctor,
+                    date=date,
+                    time=time
+                ).exists():
+                    errors.append(f"الموعد {date} - {time} موجود مسبقًا")
+                    continue
+                    
+                slots_to_create.append(AvailableSlot(
+                    doctor=doctor,
+                    date=date,
+                    time=time
+                ))
 
-        return Response({"message": "Slots added successfully"}, status=status.HTTP_201_CREATED)
+        if errors:
+            return Response({"errors": errors}, status=status.HTTP_400_BAD_REQUEST)
 
-# عرض المواعيد المتاحة للطبيب
+        AvailableSlot.objects.bulk_create(slots_to_create, ignore_conflicts=True)
+        return Response(
+            {"message": "تمت الإضافة بنجاح", "added_slots": len(slots_to_create)},
+            status=status.HTTP_201_CREATED
+        )
+
+
 class DoctorAvailableSlots(APIView):
+    """✅ عرض المواعيد المتاحة للطبيب"""
     def get(self, request, doctor_id):
         slots = AvailableSlot.objects.filter(doctor_id=doctor_id)
         if not slots:
-            return Response({"message": "No available slots for this doctor."}, status=status.HTTP_404_NOT_FOUND)
-        
+            return Response(
+                {"message": "لا توجد مواعيد متاحة"},
+                status=status.HTTP_404_NOT_FOUND
+            )
         serializer = AvailableSlotSerializer(slots, many=True)
         return Response(serializer.data)
 
-# تعديل موعد متاح
+
 class UpdateAvailableSlot(APIView):
+    """✅ تحديث موعد متاح"""
+    permission_classes = [IsAuthenticated]
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'date': openapi.Schema(type=openapi.TYPE_STRING, format="date"),
+                'time': openapi.Schema(type=openapi.TYPE_STRING, format="time")
+            },
+            required=['date', 'time']
+        )
+    )
     def put(self, request, slot_id):
         try:
-            slot = AvailableSlot.objects.get(id=slot_id)
+            slot = AvailableSlot.objects.get(id=slot_id, doctor__user=request.user)
         except AvailableSlot.DoesNotExist:
-            return Response({"error": "Slot not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "الموعد غير موجود أو غير مصرح بالتعديل"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        data = request.data
-        new_date = data.get('date')
-        new_time = data.get('time')
+        new_date = request.data.get('date')
+        new_time = request.data.get('time')
 
         if not new_date or not new_time:
-            return Response({"error": "Date and time are required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "يجب إدخال تاريخ ووقت جديدين"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            datetime.strptime(new_date, "%Y-%m-%d")
+            datetime.strptime(new_time, "%H:%M")
+        except ValueError:
+            return Response(
+                {"error": "تنسيق غير صحيح (YYYY-MM-DD للتاريخ و HH:MM للوقت)"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if AvailableSlot.objects.filter(
+            doctor=slot.doctor, 
+            date=new_date, 
+            time=new_time
+        ).exclude(id=slot.id).exists():
+            return Response(
+                {"error": "هذا الموعد موجود مسبقًا"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         slot.date = new_date
         slot.time = new_time
         slot.save()
 
-        slot_serializer = AvailableSlotSerializer(slot)
-        return Response({"message": "Slot updated successfully", "slot": slot_serializer.data}, status=status.HTTP_200_OK)
+        serializer = AvailableSlotSerializer(slot)
+        return Response({
+            "message": "تم التحديث بنجاح",
+            "data": serializer.data
+        }, status=status.HTTP_200_OK)
 
 
-# حجز موعد للمريض
-class BookAppointment(APIView):
-    def post(self, request):
-        data = request.data
-        doctor_id = data.get('doctor_id')
-        patient_id = data.get('patient_id')
-        date = data.get('date')
-        time = data.get('time')
+# ================ Patient Endpoints ================
+class BookAppointment(generics.CreateAPIView):
+    """✅ حجز موعد جديد"""
+    queryset = Appointment.objects.all()
+    serializer_class = AppointmentSerializer
+    permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
         try:
-            doctor = DoctorNurseProfile.objects.get(id=doctor_id)
-        except DoctorNurseProfile.DoesNotExist:
-            return Response({"error": "Doctor not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        try:
-            patient = PatientProfile.objects.get(id=patient_id)
+            patient = PatientProfile.objects.get(user=self.request.user)
         except PatientProfile.DoesNotExist:
-            return Response({"error": "Patient not found"}, status=status.HTTP_404_NOT_FOUND)
+            raise serializers.ValidationError({"error": "المريض غير موجود"})
 
-        slot_exists = AvailableSlot.objects.filter(doctor=doctor, date=date, time=time).exists()
-        if not slot_exists:
-            return Response({"error": "Slot not available"}, status=status.HTTP_400_BAD_REQUEST)
+        doctor_id = self.request.data.get('doctor')
+        date = self.request.data.get('date')
+        time = self.request.data.get('time')
 
-        appointment = Appointment.objects.create(doctor=doctor, patient=patient, date=date, time=time)
-        AvailableSlot.objects.filter(doctor=doctor, date=date, time=time).delete()
+        if not all([doctor_id, date, time]):
+            raise serializers.ValidationError({"error": "بيانات ناقصة"})
 
-        appointment_serializer = AppointmentSerializer(appointment)
-        return Response({"message": "Appointment booked successfully", "appointment": appointment_serializer.data}, status=status.HTTP_201_CREATED)
+        try:
+            doctor = DoctorNurseProfile.objects.get(id=int(doctor_id))
+        except (ValueError, DoctorNurseProfile.DoesNotExist):
+            raise serializers.ValidationError({"error": "طبيب غير موجود"})
 
-# عرض المواعيد القادمة للطبيب
+        slot = AvailableSlot.objects.filter(
+            doctor=doctor, 
+            date=date, 
+            time=time
+        ).first()
+        
+        if not slot:
+            raise serializers.ValidationError({"error": "الموعد غير متاح"})
+
+        if Appointment.objects.filter(
+            doctor=doctor, 
+            date=date, 
+            time=time
+        ).count() >= 3:
+            raise serializers.ValidationError({"error": "الموعد مكتمل"})
+
+        serializer.save(doctor=doctor, patient=patient)
+
+        if Appointment.objects.filter(
+            doctor=doctor, 
+            date=date, 
+            time=time
+        ).count() >= 3:
+            slot.delete()
+
+
+# ================ Appointment Management ================
 class DoctorUpcomingAppointments(APIView):
-    def get(self, request, doctor_id):
-        now = datetime.now()
-        upcoming_appointments = Appointment.objects.filter(doctor_id=doctor_id, date__gte=now).order_by('date', 'time')
+    """✅ مواعيد الطبيب القادمة"""
+    permission_classes = [IsAuthenticated]
 
-        if not upcoming_appointments:
-            return Response({"message": "No upcoming appointments."}, status=status.HTTP_404_NOT_FOUND)
+    def get(self, request):
+        try:
+            doctor = DoctorNurseProfile.objects.get(user=request.user)
+        except DoctorNurseProfile.DoesNotExist:
+            return Response(
+                {"error": "غير مصرح به"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        serializer = AppointmentSerializer(upcoming_appointments, many=True)
+        appointments = Appointment.objects.filter(
+            doctor=doctor,
+            date__gte=date.today()
+        ).select_related('patient').order_by('date', 'time')
+
+        serializer = PatientAppointmentSerializer(appointments, many=True)
         return Response(serializer.data)
 
-# عرض المواعيد السابقة للطبيب
+
 class DoctorPastAppointments(APIView):
-    def get(self, request, doctor_id):
-        now = datetime.now()
-        past_appointments = Appointment.objects.filter(doctor_id=doctor_id, date__lt=now).order_by('-date', '-time')
+    """✅ مواعيد الطبيب السابقة"""
+    permission_classes = [IsAuthenticated, IsDoctor]
 
-        if not past_appointments:
-            return Response({"message": "No past appointments."}, status=status.HTTP_404_NOT_FOUND)
+    def get(self, request):
+        try:
+            doctor = DoctorNurseProfile.objects.get(user=request.user)
+        except DoctorNurseProfile.DoesNotExist:
+            return Response(
+                {"error": "غير مصرح به"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        serializer = AppointmentSerializer(past_appointments, many=True)
+        appointments = Appointment.objects.filter(
+            doctor=doctor,
+            date__lt=date.today()
+        ).select_related('patient').order_by('-date', '-time')
+
+        serializer = PatientAppointmentSerializer(appointments, many=True)
         return Response(serializer.data)
 
-# عرض المواعيد القادمة للمريض
-class PatientUpcomingAppointments(APIView):
-    def get(self, request, patient_id):
-        now = datetime.now()
-        upcoming_appointments = Appointment.objects.filter(patient_id=patient_id, date__gte=now).order_by('date', 'time')
 
-        if not upcoming_appointments:
-            return Response({"message": "No upcoming appointments."}, status=status.HTTP_404_NOT_FOUND)
-
-        serializer = AppointmentSerializer(upcoming_appointments, many=True)
-        return Response(serializer.data)
-
-# عرض المواعيد السابقة للمريض
 class PatientPastAppointments(APIView):
-    def get(self, request, patient_id):
-        now = datetime.now()
-        past_appointments = Appointment.objects.filter(patient_id=patient_id, date__lt=now).order_by('-date', '-time')
+    """✅ مواعيد المريض السابقة"""
+    permission_classes = [IsAuthenticated]
 
-        if not past_appointments:
-            return Response({"message": "No past appointments."}, status=status.HTTP_404_NOT_FOUND)
+    def get(self, request):
+        try:
+            patient = PatientProfile.objects.get(user=request.user)
+        except PatientProfile.DoesNotExist:
+            return Response(
+                {"error": "غير مصرح به"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
 
-        serializer = AppointmentSerializer(past_appointments, many=True)
+        appointments = Appointment.objects.filter(
+            patient=patient,
+            date__lt=date.today()
+        ).select_related('doctor__user', 'doctor__specialty').order_by('-date', '-time')
+
+        serializer = PatientPastAppointmentsSerializer(appointments, many=True)
         return Response(serializer.data)
-# تعديل موعد
+
+
+class PatientUpcomingAppointments(APIView):
+    """✅ مواعيد المريض القادمة"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            patient = PatientProfile.objects.get(user=request.user)
+        except PatientProfile.DoesNotExist:
+            return Response(
+                {"error": "غير مصرح به"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        appointments = Appointment.objects.filter(
+            patient=patient,
+            date__gte=date.today()
+        ).select_related('doctor__user', 'doctor__specialty').order_by('date', 'time')
+
+        serializer = UpcomingAppointmentsSerializer(appointments, many=True)
+        return Response(serializer.data)
+
+
 class UpdateAppointment(APIView):
+    """✅ تحديث الموعد"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, appointment_id):
+        try:
+            appointment = Appointment.objects.get(
+                id=appointment_id, 
+                patient__user=request.user
+            )
+        except Appointment.DoesNotExist:
+            return Response(
+                {"error": "الموعد غير موجود"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        available_slots = AvailableSlot.objects.filter(
+            doctor=appointment.doctor, 
+            date__gte=date.today()
+        ).order_by('date', 'time')
+
+        return Response({
+            "appointment": AppointmentSerializer(appointment).data,
+            "available_slots": AvailableSlotSerializer(available_slots, many=True).data
+        })
+
+    @swagger_auto_schema(
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            properties={
+                'date': openapi.Schema(type=openapi.TYPE_STRING, format="date"),
+                'time': openapi.Schema(type=openapi.TYPE_STRING, format="time")
+            }
+        )
+    )
     def put(self, request, appointment_id):
         try:
-            # محاولة الحصول على الحجز باستخدام appointment_id
-            appointment = Appointment.objects.get(id=appointment_id)
+            appointment = Appointment.objects.get(
+                id=appointment_id, 
+                patient__user=request.user
+            )
         except Appointment.DoesNotExist:
-            return Response({"error": "Appointment not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "الموعد غير موجود"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
 
-        data = request.data
-        new_date = data.get('date')
-        new_time = data.get('time')
+        new_date = request.data.get('date')
+        new_time = request.data.get('time')
 
         if not new_date or not new_time:
-            return Response({"error": "Date and time are required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "يجب إدخال تاريخ ووقت جديدين"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        # تحديث الحجز
+        if appointment.date < date.today():
+            return Response(
+                {"error": "لا يمكن تعديل المواعيد المنتهية"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        if not AvailableSlot.objects.filter(
+            doctor=appointment.doctor,
+            date=new_date,
+            time=new_time
+        ).exists():
+            return Response(
+                {"error": "الموعد الجديد غير متاح"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # استعادة الموعد القديم
+        AvailableSlot.objects.create(
+            doctor=appointment.doctor,
+            date=appointment.date,
+            time=appointment.time
+        )
+
+        # تحديث الموعد الجديد
         appointment.date = new_date
         appointment.time = new_time
         appointment.save()
 
-        appointment_serializer = AppointmentSerializer(appointment)
-        return Response({"message": "Appointment updated successfully", "appointment": appointment_serializer.data})
+        # حذف الموعد الجديد من المتاح
+        AvailableSlot.objects.filter(
+            doctor=appointment.doctor,
+            date=new_date,
+            time=new_time
+        ).delete()
 
-    def put(self, request, appointment_id):
-        data = request.data
-        date = data.get('date')
-        time = data.get('time')
-
-        try:
-            appointment = Appointment.objects.get(id=appointment_id)
-        except Appointment.DoesNotExist:
-            return Response({"error": "Appointment not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # تحقق من أن الموعد هو موعد قادم
-        if appointment.date < datetime.now().date():
-            return Response({"error": "You cannot modify past appointments."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # تحقق من توفر الموعد الجديد
-        slot_exists = AvailableSlot.objects.filter(doctor=appointment.doctor, date=date, time=time).exists()
-        if not slot_exists:
-            return Response({"error": "Slot not available"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # تحديث الموعد
-        appointment.date = date
-        appointment.time = time
-        appointment.save()
-
-        # إرجاع تفاصيل الموعد بعد التحديث
-        appointment_serializer = AppointmentSerializer(appointment)
-        return Response({"message": "Appointment updated successfully", "appointment": appointment_serializer.data}, status=status.HTTP_200_OK)
+        return Response({
+            "message": "تم التحديث بنجاح",
+            "appointment": AppointmentSerializer(appointment).data
+        })

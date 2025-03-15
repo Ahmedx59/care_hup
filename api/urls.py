@@ -7,26 +7,21 @@ from .views import (
 )
 
 urlpatterns = [
-    # إضافة مواعيد للطبيب
-    path('doctor/<int:doctor_id>/add_slots/', AddAvailableSlots.as_view(), name='add_slots'),
-    # عرض المواعيد المتاحة للطبيب
-     path('doctor/<int:doctor_id>/available_slots/', DoctorAvailableSlots.as_view(), name='get_available_slots'),
-    # تعديل موعد متاح
+    path('api/doctor/add_slots/', AddAvailableSlots.as_view(), name='add_slots'),  
+
+    path('doctor/<int:doctor_id>/available_slots/', DoctorAvailableSlots.as_view(), name='get_available_slots'),
+
     path('slot/<int:slot_id>/update/', UpdateAvailableSlot.as_view(), name='update_available_slot'),
-    # حجز موعد للمريض
+
     path('book_appointment/', BookAppointment.as_view(), name='book_appointment'),
-    # تعديل موعد
+
     path('appointment/<int:appointment_id>/update/', UpdateAppointment.as_view(), name='update_appointment'),
 
-    # مواعيد الطبيب
-    # قادم
-    path('doctor/<int:doctor_id>/appointments/upcoming/', DoctorUpcomingAppointments.as_view(), name='doctor_upcoming_appointments'),
-    # سابق
-    path('doctor/<int:doctor_id>/appointments/past/', DoctorPastAppointments.as_view(), name='doctor_past_appointments'),
+    path('doctor/appointments/upcoming/', DoctorUpcomingAppointments.as_view(), name='doctor_upcoming_appointments'),
 
-    # مواعيد المريض
-    # قادم
-    path('patient/<int:patient_id>/appointments/upcoming/', PatientUpcomingAppointments.as_view(), name='patient_upcoming_appointments'),
-    # سابق
-    path('patient/<int:patient_id>/appointments/past/', PatientPastAppointments.as_view(), name='patient_past_appointments'),
+    path('doctor/appointments/past/', DoctorPastAppointments.as_view(), name='doctor_past_appointments'),
+
+    path('patient/appointments/upcoming/', PatientUpcomingAppointments.as_view(), name='patient_upcoming_appointments'),
+
+    path('patient/appointments/past/', PatientPastAppointments.as_view(), name='patient_past_appointments'),
 ]
