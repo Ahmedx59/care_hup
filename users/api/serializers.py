@@ -32,6 +32,8 @@ class SingUpSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateTimeField(required = True)
     class Meta:
         model = PatientProfile
+        exclude = ('user',)
+
         # fields = ('chronic_diseases','user_type')
 
     def validate(self, attrs):
