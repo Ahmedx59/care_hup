@@ -1,4 +1,6 @@
 from uuid import uuid4
+
+
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.core.validators import MinLengthValidator
@@ -30,8 +32,6 @@ class SingUpSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateTimeField(required = True)
     class Meta:
         model = PatientProfile
-        exclude = ('user',)
-
         # fields = ('chronic_diseases','user_type')
 
     def validate(self, attrs):
