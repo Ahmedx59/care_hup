@@ -77,7 +77,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = DoctorNurseProfile
-        exclude = ('user',)
+        exclude = ('user','offer',)
              
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -213,9 +213,8 @@ class UserRetSerializer(serializers.ModelSerializer):
             "birth_date",
         )
 
-
 class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
-    user = UserRetSerializer()
+    user = UserRetSerializer(read_only=True)
 
     class Meta:
         model = DoctorNurseProfile
@@ -226,7 +225,61 @@ class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
             "experience_year",
             "about",
             "certificates",
+            "offer"
         )
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "username",
+            "gender",
+            "phone_number",
+            "birth_date",
+        ) 
+
+class UpdateProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
+    user = UpdateUserSerializer()
+
+    class Meta:
+        model = DoctorNurseProfile
+        fields = (
+            "user",
+            "id",
+            "price",
+            "experience_year",
+            "about",
+            "certificates",
+            "offer"
+        )
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)  # Extract user data from request
+
+        if user_data:
+            # Update the related user fields
+            for attr, value in user_data.items():
+                setattr(instance.user, attr, value)
+            instance.user.save()
+
+        return super().update(instance, validated_data)
+
+    # def update(self, instance, validated_data):
+    #     print("="*100)
+    #     print(instance)
+    #     print(instance.user)
+
+    #     print(validated_data["user"]["username"])
+    #     instance.user.username = validated_data.get("username", instance.user.username)
+    #     instance.user.email = validated_data.get("email", instance.user.email)
+    #     instance.user.phone_number = validated_data.get("phone_number", instance.user.phone_number)
+    #     instance.user.gender = validated_data.get("gender", instance.user.gender)
+    #     instance.user.image = validated_data.get("image", instance.user.image)
+    #     instance.user.birth_date = validated_data.get("birth_date", instance.user.birth_date)
+    #     instance.user.save()
+
+    #     print(instance.user.email)
+    #     return instance
 
 
 class PatientProfileSerializer(serializers.ModelSerializer):

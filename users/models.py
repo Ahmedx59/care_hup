@@ -44,6 +44,7 @@ class DoctorNurseProfile(models.Model):
     specialty = models.ForeignKey('SpecialtyDoctor', related_name='doctor_specialty', on_delete=models.SET_NULL , null=True , blank=True)
     certificates = models.CharField(max_length=50 ,blank=True, null=True)
     city = models.ForeignKey('City', related_name='city', on_delete=models.SET_NULL , null=True , blank=True) 
+    offer = models.IntegerField(blank=True, null=True)
     
     def __str__(self):
         return f"profile {self.id} for {str(self.user)}"

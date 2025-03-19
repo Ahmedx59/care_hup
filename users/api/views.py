@@ -18,7 +18,8 @@ from .serializers import (
     SignUpDoctorNurseSerializer ,
     UsersCitySerializer,
     UsersGovernorateSerializer,
-    SpecialtySerializer
+    SpecialtySerializer,
+    UpdateProfileDoctorAndNurseSerializer,
 )
 
 from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate , SpecialtyDoctor
@@ -134,14 +135,13 @@ class UserProfile(viewsets.GenericViewSet):
             raise serializers.ValidationError({'error':'the user dont have user type'})
         return Response(serializer.data)
     
-    @action(detail=False , methods=['put','patch'])
+    @action(detail=False , methods=['put'], serializer_class=UpdateProfileDoctorAndNurseSerializer)
     def edit_my_profile(self , request , *args, **kwargs):
         user = request.user
         data = request.data
         
         if user.user_type in [User.User_Type.DOCTOR , User.User_Type.NURSE]:
-            print(user,'='*100)
-            serializer = ProfileDoctorAndNurseSerializer(data = data)
+            serializer = self.get_serializer(user.doctor_profile, data = data)
         
         # if user.user_type == User.User_Type.PATIENT:
         #     print(user,'*'*100)
