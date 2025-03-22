@@ -202,6 +202,23 @@ class ConfirmResetPasswordSerializer(serializers.Serializer):
         user.save()
         return {}
     
+
+#==================================================================================
+
+
+class UserGovernorateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Governorate
+        fields = '__all__'
+
+
+class UserCitySerializer(serializers.ModelSerializer):
+    governorate = UserGovernorateSerializer()
+    class Meta:
+        model = City
+        fields = '__all__'
+
+
 class UserRetSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -211,6 +228,7 @@ class UserRetSerializer(serializers.ModelSerializer):
             "gender",
             "phone_number",
             "birth_date",
+            "image",
         )
 
 class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
@@ -295,11 +313,14 @@ class PatientProfileSerializer(serializers.ModelSerializer):
     
 
 class ListDoctorSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+    user = UserRetSerializer()
+    specialty = SpecialtySerializer()
+    city = UserCitySerializer()
+
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ('user','price','specialty','city',)
+        fields = ('user','price','specialty','city','offer','about',)
 
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
@@ -308,14 +329,3 @@ class ListNurseSerializer(serializers.ModelSerializer):
         model = DoctorNurseProfile
         fields = ['user','price']
 
-
-class UsersGovernorateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Governorate
-        fields = '__all__'
-
-
-class UsersCitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = City
-        fields = '__all__'
