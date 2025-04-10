@@ -12,7 +12,7 @@ class DoctorFilter(filters.FilterSet):
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ("city", "city__governorate", "has_offer","min_price")
+        fields = ("city", "city__governorate","specialty", "has_offer","min_price")
 
 
     def filter_has_offer(self, queryset, name, value):
