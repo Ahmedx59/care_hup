@@ -8,7 +8,7 @@ class User(AbstractUser):
     class GenderType(models.TextChoices):
         MALE = 'Male'
         FEMALE = 'Female'
-    
+     
     class User_Type(models.TextChoices):
         PATIENT = 'Patient'
         NURSE = 'Nurse' 
