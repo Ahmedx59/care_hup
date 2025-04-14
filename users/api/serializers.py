@@ -118,7 +118,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.specialty = specialty
         user_profile.city = city
         user_profile.card = card
-        user_profile.services = services
+        user_profile.services = card 
         user_profile.save()
 
         return {}
