@@ -1,9 +1,11 @@
 from django.shortcuts import render , get_object_or_404
 
-from rest_framework import mixins , viewsets , status , serializers
+from rest_framework import mixins , viewsets , status , serializers ,filters
 from rest_framework.decorators import action
 from rest_framework.response import Response 
 from rest_framework.permissions import AllowAny
+from django_filters.rest_framework import DjangoFilterBackend
+
 
 from .serializers import (
     SingUpSerializer , 
@@ -16,13 +18,14 @@ from .serializers import (
     ListDoctorSerializer ,
     ListNurseSerializer ,
     SignUpDoctorNurseSerializer ,
-    UsersCitySerializer,
-    UsersGovernorateSerializer,
-    SpecialtySerializer
+    UserCitySerializer,
+    UserGovernorateSerializer,
+    SpecialtySerializer,
+    UpdateProfileDoctorAndNurseSerializer,
 )
 
 from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate , SpecialtyDoctor
-
+from users.filter import DoctorFilter
 
 class AuthUser(
     viewsets.GenericViewSet):
@@ -134,14 +137,13 @@ class UserProfile(viewsets.GenericViewSet):
             raise serializers.ValidationError({'error':'the user dont have user type'})
         return Response(serializer.data)
     
-    @action(detail=False , methods=['put','patch'])
+    @action(detail=False , methods=['put'], serializer_class=UpdateProfileDoctorAndNurseSerializer)
     def edit_my_profile(self , request , *args, **kwargs):
         user = request.user
         data = request.data
         
         if user.user_type in [User.User_Type.DOCTOR , User.User_Type.NURSE]:
-            print(user,'='*100)
-            serializer = ProfileDoctorAndNurseSerializer(data = data)
+            serializer = self.get_serializer(user.doctor_profile, data = data)
         
         # if user.user_type == User.User_Type.PATIENT:
         #     print(user,'*'*100)
@@ -160,12 +162,15 @@ class UserProfile(viewsets.GenericViewSet):
     #     serializer = self.get_serializer(doctors, many =True)
     #     return Response(serializer.data)
 
-class DoctorsViewSet(mixins.ListModelMixin,
+class DoctorsViewSet(
+    mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet):
 
     queryset = DoctorNurseProfile.objects.all()
     serializer_class = ListDoctorSerializer
+    filterset_class = DoctorFilter
+    
 
     def get_serializer_class(self):
         if self.action == 'retrieve':            
@@ -175,8 +180,9 @@ class DoctorsViewSet(mixins.ListModelMixin,
     def get_queryset(self):
         return super().get_queryset().filter(user__user_type = User.User_Type.DOCTOR)
     
-class NurseViewSet(mixins.ListModelMixin,
-            mixins.RetrieveModelMixin,
+class NurseViewSet(
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
     viewsets.GenericViewSet):
 
     queryset = DoctorNurseProfile.objects.all()
@@ -207,14 +213,14 @@ class ChooseGovernorate(
     viewsets.GenericViewSet):
 
     queryset = Governorate.objects.all()
-    serializer_class = UsersGovernorateSerializer
+    serializer_class = UserGovernorateSerializer
 
 
 class ChooseCity(
     mixins.ListModelMixin,
     viewsets.GenericViewSet):
 
-    serializer_class = UsersCitySerializer
+    serializer_class = UserCitySerializer
     permission_classes = [AllowAny]
 
     def get_queryset(self):

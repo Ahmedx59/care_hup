@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-g)6qxa@ka^)4yvk^^vmn8gvo_%5upalh5x%^25gs(%7+gkt^g0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2'] 
 
 
 # Application definition
@@ -66,6 +66,7 @@ REST_FRAMEWORK = {
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'DEFAULT_FILTER_BACKENDS': ['django_filters.rest_framework.DjangoFilterBackend'],
+    'PAGE_SIZE': 10,
 
 }
 

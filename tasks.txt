@@ -6,6 +6,4 @@ data in cites , Governorate
 
 Doctors filter by city , specialty
 
-add offers doctors is (price integer only)
---
---
+add offers doctors is (price integer only)(X)

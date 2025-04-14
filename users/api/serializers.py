@@ -27,7 +27,7 @@ class SingUpSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only = True , validators=[MinLengthValidator(8)] , required = True)
     confirm_password = serializers.CharField(required = True , write_only = True)
     user_type = serializers.ChoiceField(choices=User.User_Type.choices , required = True)
-    gender = serializers.CharField(required = True)
+    gender = serializers.ChoiceField(choices=User.GenderType.choices , required = True)
     phone_number = serializers.IntegerField(required = True)
     birth_date = serializers.DateTimeField(required = True)
     class Meta:
@@ -77,7 +77,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = DoctorNurseProfile
-        exclude = ('user',)
+        exclude = ('user','offer',)
              
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -99,6 +99,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         price = validated_data.pop('price')
         specialty = validated_data.pop('specialty')
         city = validated_data.pop('city')
+        card = validated_data.pop('card')
 
         send_mail(
             f"Activation Code ",
@@ -115,6 +116,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.certificates = certificates
         user_profile.specialty = specialty
         user_profile.city = city
+        user_profile.card = card
         user_profile.save()
 
         return {}
@@ -202,6 +204,23 @@ class ConfirmResetPasswordSerializer(serializers.Serializer):
         user.save()
         return {}
     
+
+#==================================================================================
+
+
+class UserGovernorateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Governorate
+        fields = '__all__'
+
+
+class UserCitySerializer(serializers.ModelSerializer):
+    governorate = UserGovernorateSerializer()
+    class Meta:
+        model = City
+        fields = '__all__'
+
+
 class UserRetSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -211,11 +230,11 @@ class UserRetSerializer(serializers.ModelSerializer):
             "gender",
             "phone_number",
             "birth_date",
+            "image",
         )
 
-
 class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
-    user = UserRetSerializer()
+    user = UserRetSerializer(read_only=True)
 
     class Meta:
         model = DoctorNurseProfile
@@ -226,7 +245,61 @@ class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
             "experience_year",
             "about",
             "certificates",
+            "offer"
         )
+
+class UpdateUserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = (
+            "username",
+            "gender",
+            "phone_number",
+            "birth_date",
+        ) 
+
+class UpdateProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
+    user = UpdateUserSerializer()
+
+    class Meta:
+        model = DoctorNurseProfile
+        fields = (
+            "user",
+            "id",
+            "price",
+            "experience_year",
+            "about",
+            "certificates",
+            "offer"
+        )
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)  # Extract user data from request
+
+        if user_data:
+            # Update the related user fields
+            for attr, value in user_data.items():
+                setattr(instance.user, attr, value)
+            instance.user.save()
+
+        return super().update(instance, validated_data)
+
+    # def update(self, instance, validated_data):
+    #     print("="*100)
+    #     print(instance)
+    #     print(instance.user)
+
+    #     print(validated_data["user"]["username"])
+    #     instance.user.username = validated_data.get("username", instance.user.username)
+    #     instance.user.email = validated_data.get("email", instance.user.email)
+    #     instance.user.phone_number = validated_data.get("phone_number", instance.user.phone_number)
+    #     instance.user.gender = validated_data.get("gender", instance.user.gender)
+    #     instance.user.image = validated_data.get("image", instance.user.image)
+    #     instance.user.birth_date = validated_data.get("birth_date", instance.user.birth_date)
+    #     instance.user.save()
+
+    #     print(instance.user.email)
+    #     return instance
 
 
 class PatientProfileSerializer(serializers.ModelSerializer):
@@ -242,11 +315,14 @@ class PatientProfileSerializer(serializers.ModelSerializer):
     
 
 class ListDoctorSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField()
+    user = UserRetSerializer()
+    specialty = SpecialtySerializer()
+    city = UserCitySerializer()
+
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ('user','price','specialty','city',)
+        fields = ('user','price','specialty','city','offer','about',)
 
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
@@ -255,14 +331,3 @@ class ListNurseSerializer(serializers.ModelSerializer):
         model = DoctorNurseProfile
         fields = ['user','price']
 
-
-class UsersGovernorateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Governorate
-        fields = '__all__'
-
-
-class UsersCitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = City
-        fields = '__all__'
