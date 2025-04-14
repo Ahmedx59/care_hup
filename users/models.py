@@ -11,7 +11,7 @@ class User(AbstractUser):
     
     class User_Type(models.TextChoices):
         PATIENT = 'Patient'
-        NURSE = 'Nurse' 
+        NURSE = 'Nurse'
         DOCTOR = 'Doctor'
 
 
