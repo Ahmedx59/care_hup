@@ -54,7 +54,7 @@ class AuthUser(
         serializer = self.get_serializer(data = data)
         serializer.is_valid(raise_exception = True)
         serializer.save()
-        return Response({'detail':'check your email.'})    
+        return Response({'detail':'check your email.'})
 
         
     @action(detail=True , methods=['post'] , serializer_class=UserActivateSerializers)

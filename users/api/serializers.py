@@ -27,7 +27,7 @@ class SingUpSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only = True , validators=[MinLengthValidator(8)] , required = True)
     confirm_password = serializers.CharField(required = True , write_only = True)
     user_type = serializers.ChoiceField(choices=User.User_Type.choices , required = True)
-    gender = serializers.CharField(required = True)
+    gender = serializers.ChoiceField(choices=User.GenderType.choices , required = True)
     phone_number = serializers.IntegerField(required = True)
     birth_date = serializers.DateTimeField(required = True)
     class Meta:
@@ -101,6 +101,8 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         city = validated_data.pop('city')
         services = validated_data.pop('services')
         card = validated_data.pop('card')
+        card = validated_data.pop('card')
+        services = validated_data.pop('services')
 
         send_mail(
             f"Activation Code ",

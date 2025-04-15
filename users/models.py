@@ -8,7 +8,7 @@ class User(AbstractUser):
     class GenderType(models.TextChoices):
         MALE = 'Male'
         FEMALE = 'Female'
-    
+     
     class User_Type(models.TextChoices):
         PATIENT = 'Patient'
         NURSE = 'Nurse'
@@ -46,6 +46,7 @@ class DoctorNurseProfile(models.Model):
     certificates = models.CharField(max_length=50 ,blank=True, null=True)
     city = models.ForeignKey('City', related_name='city', on_delete=models.SET_NULL , null=True , blank=True) 
     offer = models.IntegerField(default=0, blank=True, null=True)
+    services = models.CharField(max_length=50 ,blank=True, null=True)
     
     def __str__(self):
         return f"profile {self.id} for {str(self.user)}"
