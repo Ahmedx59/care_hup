@@ -99,6 +99,8 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         price = validated_data.pop('price')
         specialty = validated_data.pop('specialty')
         city = validated_data.pop('city')
+        services = validated_data.pop('services')
+        card = validated_data.pop('card')
 
         send_mail(
             f"Activation Code ",
@@ -115,6 +117,10 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.certificates = certificates
         user_profile.specialty = specialty
         user_profile.city = city
+        user_profile.card = card
+
+        user_profile.services = services
+
         user_profile.save()
 
         return {}
