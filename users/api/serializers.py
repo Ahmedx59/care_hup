@@ -100,9 +100,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         specialty = validated_data.pop('specialty')
         city = validated_data.pop('city')
         services = validated_data.pop('services')
-        card = validated_data.pop('card')
-        card = validated_data.pop('card')
-        services = validated_data.pop('services')
+       
 
         send_mail(
             f"Activation Code ",
