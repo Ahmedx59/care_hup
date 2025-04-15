@@ -41,6 +41,7 @@ class DoctorNurseProfile(models.Model):
     experience_year = models.IntegerField(blank=True, null=True)
     about = models.TextField(max_length=500, blank=True)
     card = models.FileField(upload_to='image_card', max_length=100 , blank=True, null=True)
+    services = models.TextField(max_length=500 ,blank=True, null=True)
     specialty = models.ForeignKey('SpecialtyDoctor', related_name='doctor_specialty', on_delete=models.SET_NULL , null=True , blank=True)
     certificates = models.CharField(max_length=50 ,blank=True, null=True)
     city = models.ForeignKey('City', related_name='city', on_delete=models.SET_NULL , null=True , blank=True) 
