@@ -249,7 +249,8 @@ class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
             "experience_year",
             "about",
             "certificates",
-            "offer"
+            "offer",
+            "services"
         )
 
 class UpdateUserSerializer(serializers.ModelSerializer):
@@ -274,7 +275,8 @@ class UpdateProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
             "experience_year",
             "about",
             "certificates",
-            "offer"
+            "offer",
+            "services"
         )
 
     def update(self, instance, validated_data):
@@ -330,8 +332,15 @@ class ListDoctorSerializer(serializers.ModelSerializer):
 
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ['user','price']
+        fields = ['user','price','id','about','image']
 
+    def get_image(self, obj):
+        request = self.context.get('request')
+        image_url = obj.user.image.url if obj.user.image else None
+        if image_url and request:
+            return request.build_absolute_uri(image_url)
+        return image_url
