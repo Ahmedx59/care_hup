@@ -99,8 +99,8 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         price = validated_data.pop('price')
         specialty = validated_data.pop('specialty')
         city = validated_data.pop('city')
-        services = validated_data.pop('services')
         card = validated_data.pop('card')
+        services = validated_data.pop('services')
 
 
         send_mail(
@@ -119,7 +119,8 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.specialty = specialty
         user_profile.city = city
         user_profile.card = card
-        user_profile.services = services 
+        user_profile.services = services
+
         user_profile.save()
 
         return {}
@@ -248,7 +249,8 @@ class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
             "experience_year",
             "about",
             "certificates",
-            "offer"
+            "offer",
+            "services"
         )
 
 class UpdateUserSerializer(serializers.ModelSerializer):
@@ -273,7 +275,8 @@ class UpdateProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
             "experience_year",
             "about",
             "certificates",
-            "offer"
+            "offer",
+            "services"
         )
 
     def update(self, instance, validated_data):
@@ -325,13 +328,22 @@ class ListDoctorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ('user','price','specialty','city','offer','about',)
+        fields = ('id','user','price','specialty','city','offer','about')
 
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
+    image = serializers.SerializerMethodField()
     city = UserCitySerializer()
+
+    
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ['user','city']
+        fields = ['user','price','id','about','image']
 
+    def get_image(self, obj):
+        request = self.context.get('request')
+        image_url = obj.user.image.url if obj.user.image else None
+        if image_url and request:
+            return request.build_absolute_uri(image_url)
+        return image_url
