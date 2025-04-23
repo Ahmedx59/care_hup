@@ -339,7 +339,7 @@ class ListNurseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ['user','price','id','about','image']
+        fields = ['user','price','id','about','image','city']
 
     def get_image(self, obj):
         request = self.context.get('request')
