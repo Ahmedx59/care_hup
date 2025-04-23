@@ -187,6 +187,8 @@ class NurseViewSet(
 
     queryset = DoctorNurseProfile.objects.all()
     serializer_class = ListNurseSerializer
+    filterset_class = DoctorFilter
+
 
     def get_serializer_class(self):
         if self.action == 'retrieve':

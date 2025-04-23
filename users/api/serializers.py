@@ -119,13 +119,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.specialty = specialty
         user_profile.city = city
         user_profile.card = card
-<<<<<<< HEAD
         user_profile.services = services 
-=======
-
-        user_profile.services = services
-
->>>>>>> cb8ebfc1efb87a5bb50d771ac1fed61b2ae5d5aa
         user_profile.save()
 
         return {}
@@ -335,8 +329,9 @@ class ListDoctorSerializer(serializers.ModelSerializer):
 
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
+    city = UserCitySerializer()
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ['user','price']
+        fields = ['user','city']
 
