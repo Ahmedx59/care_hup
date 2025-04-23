@@ -328,7 +328,7 @@ class ListDoctorSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ('user','price','specialty','city','offer','about',)
+        fields = ('id','user','price','specialty','city','offer','about')
 
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
