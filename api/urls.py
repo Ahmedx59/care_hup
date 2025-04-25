@@ -24,4 +24,5 @@ urlpatterns = [
     path('patient/appointments/upcoming/', PatientUpcomingAppointments.as_view(), name='patient_upcoming_appointments'),
 
     path('patient/appointments/past/', PatientPastAppointments.as_view(), name='patient_past_appointments'),
+    
 ]
