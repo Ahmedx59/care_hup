@@ -18,13 +18,11 @@ from .serializers import (
     ListDoctorSerializer ,
     ListNurseSerializer ,
     SignUpDoctorNurseSerializer ,
-    UserCitySerializer,
-    UserGovernorateSerializer,
     SpecialtySerializer,
     UpdateProfileDoctorAndNurseSerializer,
 )
 
-from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate , SpecialtyDoctor
+from users.models import User , DoctorNurseProfile ,PatientProfile, SpecialtyDoctor
 from users.filter import DoctorFilter
 
 class AuthUser(
@@ -208,29 +206,7 @@ class ProfileViewSet(
     def get_serializer(self, *args, **kwargs):
 
         return super().get_serializer(*args, **kwargs)
-    
-
-class ChooseGovernorate(
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet):
-
-    queryset = Governorate.objects.all()
-    serializer_class = UserGovernorateSerializer
-
-
-class ChooseCity(
-    mixins.ListModelMixin,
-    viewsets.GenericViewSet):
-
-    serializer_class = UserCitySerializer
-    permission_classes = [AllowAny]
-
-    def get_queryset(self):
-        governorate_id = self.request.query_params.get('governorate_id')
-        if governorate_id:
-            return City.objects.filter(governorate_id=governorate_id)  
-        return City.objects.all()
-    
+        
 class SpecialtyDoctorViewSet(
     mixins.ListModelMixin,
     viewsets.GenericViewSet
