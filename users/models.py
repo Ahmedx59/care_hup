@@ -4,6 +4,8 @@ from django.contrib.auth.models import AbstractUser
 from django.dispatch import receiver
 from django.db.models.signals import post_save
 
+from hospital.models import City , Governorate
+
 class User(AbstractUser):
     class GenderType(models.TextChoices):
         MALE = 'Male'
@@ -44,7 +46,7 @@ class DoctorNurseProfile(models.Model):
     services = models.TextField(max_length=500 ,blank=True, null=True)
     specialty = models.ForeignKey('SpecialtyDoctor', related_name='doctor_specialty', on_delete=models.SET_NULL , null=True , blank=True)
     certificates = models.CharField(max_length=50 ,blank=True, null=True)
-    city = models.ForeignKey('City', related_name='city', on_delete=models.SET_NULL , null=True , blank=True) 
+    city = models.ForeignKey(City, related_name='doctor_profile', on_delete=models.SET_NULL , null=True , blank=True) 
     offer = models.IntegerField(default=0, blank=True, null=True)
     services = models.CharField(max_length=50 ,blank=True, null=True)
     
@@ -64,21 +66,6 @@ class PatientProfile(models.Model):
     
     def __str__(self):
         return f"profile {self.id} for {str(self.user)}"
-
-class Governorate(models.Model):
-    name = models.CharField(max_length=100)
-
-    def __str__(self):
-        return self.name
-    
-
-class City(models.Model):
-    name = models.CharField(max_length=100)
-    governorate = models.ForeignKey(Governorate , related_name="city" , on_delete=models.CASCADE)
-
-    def __str__(self):
-        return self.name
-
 
 @receiver(post_save , sender=User)
 def profile(instance , created ,  *args, **kwargs):

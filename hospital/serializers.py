@@ -7,6 +7,7 @@ class GovernorateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CitySerializer(serializers.ModelSerializer):
+    governorate = GovernorateSerializer()
     class Meta:
         model = City
         fields = '__all__'

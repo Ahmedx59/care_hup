@@ -1,6 +1,5 @@
 from uuid import uuid4
 
-
 from django.utils.crypto import get_random_string
 from django.core.mail import send_mail
 from django.core.validators import MinLengthValidator
@@ -12,9 +11,10 @@ from rest_framework import serializers
 
 from random import randint
 from datetime import datetime , timedelta
-   
-from users.models import User , DoctorNurseProfile ,PatientProfile , City , Governorate , SpecialtyDoctor
 
+from users.models import User , DoctorNurseProfile ,PatientProfile ,SpecialtyDoctor
+from hospital.models import City
+from hospital.serializers import CitySerializer
 
 class SpecialtySerializer(serializers.ModelSerializer):
     class Meta:
@@ -212,18 +212,6 @@ class ConfirmResetPasswordSerializer(serializers.Serializer):
 #==================================================================================
 
 
-class UserGovernorateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Governorate
-        fields = '__all__'
-
-
-class UserCitySerializer(serializers.ModelSerializer):
-    governorate = UserGovernorateSerializer()
-    class Meta:
-        model = City
-        fields = '__all__'
-
 
 class UserRetSerializer(serializers.ModelSerializer):
     class Meta:
@@ -323,7 +311,7 @@ class PatientProfileSerializer(serializers.ModelSerializer):
 class ListDoctorSerializer(serializers.ModelSerializer):
     user = UserRetSerializer()
     specialty = SpecialtySerializer()
-    city = UserCitySerializer()
+    city = CitySerializer()
 
 
     class Meta:
@@ -333,7 +321,7 @@ class ListDoctorSerializer(serializers.ModelSerializer):
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
     image = serializers.SerializerMethodField()
-    city = UserCitySerializer()
+    city = CitySerializer()
 
     
 
