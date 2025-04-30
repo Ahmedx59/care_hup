@@ -7,17 +7,31 @@ class GovernorateSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class CitySerializer(serializers.ModelSerializer):
-    governorate = GovernorateSerializer()
     class Meta:
         model = City
         fields = '__all__'
 
 class HospitalSerializer(serializers.ModelSerializer):
+    city = serializers.CharField(source='city.name')
     class Meta:
         model = Hospital
         fields = '__all__'
 
+
+class HospitalMiniSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Hospital
+        fields = ['name', 'address', 'image']
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        return request.build_absolute_uri(obj.image.url) if obj.image else None
+
 class DepartmentSerializer(serializers.ModelSerializer):
+    hospital = HospitalMiniSerializer(read_only=True)
+
     class Meta:
         model = Department
-        fields = '__all__'
+        fields = ['id', 'name', 'opening_time', 'closing_time', 'hospital']
