@@ -8,6 +8,8 @@ from django.contrib.auth.hashers import  check_password
 from django.utils import timezone
 
 from rest_framework import serializers
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
 
 from random import randint
 from datetime import datetime , timedelta
@@ -335,3 +337,9 @@ class ListNurseSerializer(serializers.ModelSerializer):
         if image_url and request:
             return request.build_absolute_uri(image_url)
         return image_url
+    
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['user_type'] = self.user.user_type
+        return data
