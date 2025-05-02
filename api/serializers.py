@@ -4,7 +4,9 @@ from users.models import DoctorNurseProfile, SpecialtyDoctor
 
 # ✅ تسلسل بيانات الطبيب
 class DoctorSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.CharField(source='user.username')
+    doctor_name = serializers.SerializerMethodField()
+    def get_doctor_name(self, obj):
+        return obj.user.get_full_name()
     specialty = serializers.CharField(source='specialty.name', required=False, allow_null=True)
     image = serializers.SerializerMethodField()
 
@@ -20,7 +22,9 @@ class DoctorSerializer(serializers.ModelSerializer):
 
 # ✅ تسلسل بيانات المواعيد المتاحة
 class AvailableSlotSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.CharField(source='doctor.user.username', read_only=True)
+    doctor_name = serializers.SerializerMethodField()
+    def get_doctor_name(self, obj):
+        return obj.doctor.user.get_full_name()
     specialty = serializers.CharField(source='doctor.specialty.name', required=False, allow_null=True)
 
     
@@ -30,8 +34,11 @@ class AvailableSlotSerializer(serializers.ModelSerializer):
 
 # ✅ تسلسل بيانات المواعيد
 class AppointmentSerializer(serializers.ModelSerializer):
-    doctor_name = serializers.CharField(source='doctor.user.username', read_only=True)
-   # specialty = serializers.CharField(source='doctor.specialty.name', required=False, allow_null=True)
+    doctor_name = serializers.SerializerMethodField()
+
+    def get_doctor_name(self, obj):
+        return obj.doctor.user.get_full_name()  
+     # specialty = serializers.CharField(source='doctor.specialty.name', required=False, allow_null=True)
 
     class Meta:
         model = Appointment
@@ -41,7 +48,10 @@ class AppointmentSerializer(serializers.ModelSerializer):
 # ✅ تسلسل بيانات المواعيد الخاصة بالمريض
 class PatientAppointmentSerializer(serializers.ModelSerializer):
     patient_id = serializers.IntegerField(source='patient.user.id')
-    patient_name = serializers.CharField(source='patient.user.username')
+    patient_name = serializers.SerializerMethodField()
+
+    def get_patient_name(self, obj):
+        return obj.patient.user.get_full_name()
     phone_number = serializers.CharField(source='patient.user.phone_number')
 
     class Meta:
@@ -79,7 +89,7 @@ class PatientPastAppointmentsSerializer(serializers.ModelSerializer):
         return {
 
             "doctor_id": doctor.id,
-            "doctor_name": doctor.user.username,
+            "doctor_name": doctor.user.get_full_name(),
             "specialty": doctor.specialty.name if doctor.specialty else "No specialty",
             "image": image_url 
 
