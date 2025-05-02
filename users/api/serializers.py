@@ -104,14 +104,6 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         card = validated_data.pop('card')
         services = validated_data.pop('services')
 
-
-        send_mail(
-            f"Activation Code ",
-            f"welcome {validated_data['username']}\n Here is the activation code : {validated_data['activation_code']}.",
-            settings.EMAIL_HOST_USER,
-            {validated_data['email']},
-            fail_silently=False,
-        )
         user = User.objects.create_user(**validated_data)
         user_profile = DoctorNurseProfile.objects.filter(user = user).first()
         user_profile.price = price
