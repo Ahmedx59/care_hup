@@ -1,14 +1,25 @@
 from rest_framework import serializers
 from .models import Chat, Message
 from users.models import User
+import pytz
 
 class MessageSerializer(serializers.ModelSerializer):
-    sender_name = serializers.CharField(source='sender.username', read_only=True)
-    timestamp = serializers.DateTimeField(format="%Y-%m-%d %H:%M:%S")
-    
+    sender_name = serializers.SerializerMethodField()
+    timestamp = serializers.SerializerMethodField()  
+
     class Meta:
         model = Message
         fields = ['id', 'content', 'timestamp', 'is_read', 'sender_name']
+
+    def get_sender_name(self, obj):
+            return obj.sender.get_full_name()
+    
+
+    def get_timestamp(self, obj):
+        egypt_tz = pytz.timezone("Africa/Cairo")
+        local_time = obj.timestamp.astimezone(egypt_tz)
+        return local_time.strftime("%d %B %Y، الساعة %I:%M %p").replace("AM", "صباحًا").replace("PM", "مساءً")
+
 
 class ChatSerializer(serializers.ModelSerializer):
     other_user = serializers.SerializerMethodField()
@@ -50,7 +61,9 @@ class ChatSerializer(serializers.ModelSerializer):
         if last_message:
             return {
                 "content": last_message.content,
-                "timestamp": last_message.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
+               "timestamp": last_message.timestamp.astimezone(
+                  pytz.timezone("Africa/Cairo")
+                ).strftime("%d %B %Y، الساعة %I:%M %p").replace("AM", "صباحًا").replace("PM", "مساءً"),
                 "is_read": last_message.is_read,
                 "sender_id": last_message.sender.id
             }
