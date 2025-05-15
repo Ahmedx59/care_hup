@@ -1,7 +1,10 @@
 from rest_framework import serializers
 from .models import Chat, Message
 from users.models import User
+from django.utils import timezone
+from datetime import timedelta
 import pytz
+
 
 class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
@@ -12,13 +15,19 @@ class MessageSerializer(serializers.ModelSerializer):
         fields = ['id', 'content', 'timestamp', 'is_read', 'sender_name']
 
     def get_sender_name(self, obj):
-            return obj.sender.get_full_name()
-    
+        return obj.sender.get_full_name()
 
     def get_timestamp(self, obj):
         egypt_tz = pytz.timezone("Africa/Cairo")
         local_time = obj.timestamp.astimezone(egypt_tz)
-        return local_time.strftime("%d %B %Y، الساعة %I:%M %p").replace("AM", "صباحًا").replace("PM", "مساءً")
+        now = timezone.now().astimezone(egypt_tz)
+
+        if local_time.date() == now.date():
+            return f"Today at {local_time.strftime('%I:%M %p')}"
+        elif local_time.date() == (now - timedelta(days=1)).date():
+            return f"Yesterday at {local_time.strftime('%I:%M %p')}"
+        else:
+            return local_time.strftime("%b %d at %I:%M %p")
 
 
 class ChatSerializer(serializers.ModelSerializer):
@@ -41,7 +50,6 @@ class ChatSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = request.user
         
-        # تحديد الطرف الآخر
         if user == obj.patient.user:
             target = obj.doctor or obj.nurse
             user_type = 'Doctor' if obj.doctor else 'Nurse'
@@ -59,11 +67,20 @@ class ChatSerializer(serializers.ModelSerializer):
     def get_last_message(self, obj):
         last_message = obj.messages.first()
         if last_message:
+            egypt_tz = pytz.timezone("Africa/Cairo")
+            local_time = last_message.timestamp.astimezone(egypt_tz)
+            now = timezone.now().astimezone(egypt_tz)
+
+            if local_time.date() == now.date():
+                formatted_time = f"Today at {local_time.strftime('%I:%M %p')}"
+            elif local_time.date() == (now - timedelta(days=1)).date():
+                formatted_time = f"Yesterday at {local_time.strftime('%I:%M %p')}"
+            else:
+                formatted_time = local_time.strftime("%b %d at %I:%M %p")
+
             return {
                 "content": last_message.content,
-               "timestamp": last_message.timestamp.astimezone(
-                  pytz.timezone("Africa/Cairo")
-                ).strftime("%d %B %Y، الساعة %I:%M %p").replace("AM", "صباحًا").replace("PM", "مساءً"),
+                "timestamp": formatted_time,
                 "is_read": last_message.is_read,
                 "sender_id": last_message.sender.id
             }
