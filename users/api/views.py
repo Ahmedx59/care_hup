@@ -10,6 +10,9 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    # permission_classes = [AllowAny()]
+    permission_classes = [AllowAny]
+
 
 from .serializers import (
     SingUpSerializer , 
