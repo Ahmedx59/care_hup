@@ -333,6 +333,16 @@ class ListNurseSerializer(serializers.ModelSerializer):
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
-        data['user_type'] = self.user.user_type
-        data['user_id'] = self.user.id
+        user = self.user
+
+        data['user_id'] = user.id
+        data['user_type'] = user.user_type
+
+        if user.user_type == User.User_Type.PATIENT:
+            data['profile_id'] = user.patient_profile.id
+        elif user.user_type in [User.User_Type.DOCTOR, User.User_Type.NURSE]:
+            data['profile_id'] = user.doctor_profile.id
+        else:
+            data['profile_id'] = None 
+
         return data
