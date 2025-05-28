@@ -59,10 +59,10 @@ class AuthUser(
         serializer = self.get_serializer(data = data)
         serializer.is_valid(raise_exception = True)
         serializer.save()
-        return Response({'detail':'check your email.'})
+        return Response({'detail':'Waiting for a response from the admin.'})
 
         
-    @action(detail=True , methods=['post'] , serializer_class=UserActivateSerializers)
+    @action(detail=False , methods=['post'] , serializer_class=UserActivateSerializers)
     def activate(self, *args, **kwargs):
         data = self.request.data
         serializer = self.get_serializer(data=data)

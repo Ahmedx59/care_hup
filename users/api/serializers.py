@@ -88,12 +88,21 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         if email_user :
             raise serializers.ValidationError({'detail':'this email is existed'})
         return super().validate(attrs)
-
+    
+    def generate_unique_activation_code(self):
+        while True:
+            code = randint(1000, 9999)
+            if not User.objects.filter(activation_code=code).exists():
+                return code
+        
     def create(self, validated_data):
+        
         
         validated_data.pop('confirm_password')
         validated_data['is_active'] = False
-        validated_data['activation_code'] = randint(1000,9999)
+
+        activation_code = self.generate_unique_activation_code()
+        validated_data['activation_code'] = activation_code 
 
         certificates = validated_data.pop('certificates')
         about = validated_data.pop('about')
@@ -127,10 +136,12 @@ class UserActivateSerializers(serializers.Serializer):
     code = serializers.CharField(required=True , write_only=True )
 
     def create(self, validated_data):
-        user_id = self.context['view'].kwargs['pk']
-        user = User.objects.get(id=user_id)
-        if user.activation_code != validated_data['code']:
-            raise serializers.ValidationError({'detail':'invalid Code'})
+        code = validated_data['code']
+        user = User.objects.filter(activation_code=code).first()
+
+        if not user:
+            raise serializers.ValidationError({'detail': 'Invalid activation code'})
+
         user.is_active = True
         user.activation_code = ''
         user.save()
