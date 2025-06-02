@@ -112,6 +112,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         city = validated_data.pop('city')
         card = validated_data.pop('card')
         services = validated_data.pop('services')
+        governorate = validated_data.pop('governorate')
 
         user = User.objects.create_user(**validated_data)
         user_profile = DoctorNurseProfile.objects.filter(user = user).first()
@@ -123,6 +124,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.city = city
         user_profile.card = card
         user_profile.services = services
+        user_profile.governorate = governorate
 
         user_profile.save()
 
@@ -174,18 +176,25 @@ class ChangePasswordSerializer(serializers.Serializer):
 class ResetPasswordSerializer(serializers.Serializer):
     email = serializers.CharField(required = True)
 
+    def generate_unique_activation_code(self):        
+        while True:
+            code = randint(1000,9999)
+            if not User.objects.filter(reset_pass_token = code).exists():
+                return code
+
+
     def create(self, validated_data):
         user = User.objects.filter(email = validated_data['email']).first()
         if not user:
             raise serializers.ValidationError({'detail':'not found'})
-        
-        user.reset_pass_token = get_random_string(10)
+
+        user.reset_pass_token = self.generate_unique_activation_code()
         user.reset_pass_expire_date = datetime.now() + timedelta(minutes=30)
         user.save()
 
         send_mail(
             f"Activation Code ",
-            f"welcome {user.username}\n click this link to reset password : http://127.0.0.1:8000/api/user/confirm_reset_password/{user.reset_pass_token}.",
+            f"welcome {user.username}\n use this code to reset your password :{user.reset_pass_token}.",
             settings.EMAIL_HOST_USER,
             {validated_data['email']},
             fail_silently=False,
@@ -193,13 +202,14 @@ class ResetPasswordSerializer(serializers.Serializer):
         return {}
 
 class ConfirmResetPasswordSerializer(serializers.Serializer):
+    code = serializers.CharField(required = True)
     password = serializers.CharField(required = True , validators=[MinLengthValidator(8)])
     confirm_password = serializers.CharField(required = True)
 
 
     def create(self, validated_data):
-        token = self.context['view'].kwargs['token']
-        user = User.objects.filter(reset_pass_token = token).first()
+        
+        user = User.objects.filter(reset_pass_token = validated_data["code"]).first()
         if not user: 
             raise serializers.ValidationError({'detail':'user not found'})
         
@@ -315,8 +325,8 @@ class PatientProfileSerializer(serializers.ModelSerializer):
 
 class ListDoctorSerializer(serializers.ModelSerializer):
     user = UserRetSerializer()
-    specialty = SpecialtySerializer()
-    city = CitySerializer()
+    specialty = serializers.CharField()
+    city = serializers.CharField()
 
 
     class Meta:
@@ -326,7 +336,7 @@ class ListDoctorSerializer(serializers.ModelSerializer):
 class ListNurseSerializer(serializers.ModelSerializer):
     user = serializers.StringRelatedField()
     image = serializers.SerializerMethodField()
-    city = CitySerializer()
+    city = serializers.CharField()
 
     
 

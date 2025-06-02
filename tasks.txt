@@ -8,3 +8,8 @@ Doctors filter by city , specialty
 
 add offers doctors is (price integer only)(X)
 >>>
+
+(city,specialty) = string  any endpoint
+
+reset password and confirm reset password  send message
+

@@ -19,7 +19,7 @@ class User(AbstractUser):
 
     username = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
-    phone_number = models.CharField(max_length=50 , blank=True)
+    phone_number = models.CharField(max_length=50 , blank=True,null=True)
     gender = models.CharField(max_length=50 , choices=GenderType.choices)
     image = models.ImageField(upload_to='image_user',blank=True, null=True)
     birth_date = models.DateTimeField(blank=True, null=True)
@@ -44,12 +44,11 @@ class DoctorNurseProfile(models.Model):
     about = models.TextField(max_length=500, blank=True)
     card = models.FileField(upload_to='image_card', max_length=100 , blank=True, null=True)
     services = models.TextField(max_length=500 ,blank=True, null=True)
-    specialty = models.ForeignKey('SpecialtyDoctor', related_name='doctor_specialty', on_delete=models.SET_NULL , null=True , blank=True)
+    specialty = models.CharField(max_length=50)
     certificates = models.CharField(max_length=50 ,blank=True, null=True)
-    city = models.ForeignKey(City, related_name='doctor_profile', on_delete=models.SET_NULL , null=True , blank=True) 
-    offer = models.IntegerField(default=0, blank=True, null=True)
-    services = models.CharField(max_length=50 ,blank=True, null=True)
-    
+    city = models.CharField(max_length=50) 
+    governorate = models.CharField(max_length=50)
+    offer = models.IntegerField(default=0, blank=True, null=True)    
     def __str__(self):
         return f"profile {self.id} for {str(self.user)}"
 

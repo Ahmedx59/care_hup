@@ -5,15 +5,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response 
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
-from .serializers import CustomTokenObtainPairSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 
-class CustomTokenObtainPairView(TokenObtainPairView):
-    serializer_class = CustomTokenObtainPairSerializer
-    # permission_classes = [AllowAny()]
-    permission_classes = [AllowAny]
-
-
+from .serializers import CustomTokenObtainPairSerializer
 from .serializers import (
     SingUpSerializer , 
     UserActivateSerializers , 
@@ -31,6 +25,11 @@ from .serializers import (
 
 from users.models import User , DoctorNurseProfile ,PatientProfile, SpecialtyDoctor
 from users.filter import DoctorFilter
+
+class CustomTokenObtainPairView(TokenObtainPairView):
+    serializer_class = CustomTokenObtainPairSerializer
+    # permission_classes = [AllowAny()]
+    permission_classes = [AllowAny]
 
 class AuthUser(
     viewsets.GenericViewSet):
@@ -84,14 +83,9 @@ class AuthUser(
         serializer = self.get_serializer(data = data)
         serializer.is_valid(raise_exception = True)
         serializer.save()
-        return Response({'detail':'check message on mail'})
+        return Response({'detail':'check code on mail'})
     
-    @action(
-        detail=False ,
-        methods=['post'] ,
-        serializer_class = ConfirmResetPasswordSerializer , 
-        url_path=r'confirm-reset-password/(?P<token>\d+)'
-    )
+    @action(detail=False ,methods=['post'] ,serializer_class = ConfirmResetPasswordSerializer)
     def confirm_reset_password(self,*args, **kwargs):
         data = self.request.data
         serializer = self.get_serializer(data = data)
@@ -174,7 +168,9 @@ class DoctorsViewSet(
 
     queryset = DoctorNurseProfile.objects.all()
     serializer_class = ListDoctorSerializer
-    filterset_class = DoctorFilter
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["city", "specialty","governorate"]
+    # filterset_class = DoctorFilter
     
 
     def get_serializer_class(self):
@@ -192,7 +188,9 @@ class NurseViewSet(
 
     queryset = DoctorNurseProfile.objects.all()
     serializer_class = ListNurseSerializer
-    filterset_class = DoctorFilter
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["city","governorate"]
+    # filterset_class = DoctorFilter
 
 
     def get_serializer_class(self):
