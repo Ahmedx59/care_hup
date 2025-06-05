@@ -6,6 +6,8 @@ from django.core.validators import MinLengthValidator
 from django.conf import settings
 from django.contrib.auth.hashers import  check_password
 from django.utils import timezone
+from django.contrib.auth import get_user_model
+
 
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -74,8 +76,9 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(required = True , write_only = True)
     user_type = serializers.ChoiceField(choices=User.User_Type.choices , required = True)
     gender = serializers.ChoiceField(choices=User.GenderType.choices ,required = True)
-    phone_number = serializers.IntegerField()
+    phone_number = serializers.CharField(allow_blank=True , required = False)
     birth_date = serializers.DateTimeField()
+    image = serializers.ImageField()
     
     class Meta:
         model = DoctorNurseProfile
@@ -190,40 +193,73 @@ class ResetPasswordSerializer(serializers.Serializer):
 
         user.reset_pass_token = self.generate_unique_activation_code()
         user.reset_pass_expire_date = datetime.now() + timedelta(minutes=30)
+        user.is_reset_verified = False
         user.save()
 
         send_mail(
             f"Activation Code ",
             f"welcome {user.username}\n use this code to reset your password :{user.reset_pass_token}.",
             settings.EMAIL_HOST_USER,
-            {validated_data['email']},
+            [validated_data['email']],
             fail_silently=False,
         )
         return {}
-
-class ConfirmResetPasswordSerializer(serializers.Serializer):
-    code = serializers.CharField(required = True)
-    password = serializers.CharField(required = True , validators=[MinLengthValidator(8)])
-    confirm_password = serializers.CharField(required = True)
-
+    
+class ActivateResetPasswordSerializer(serializers.Serializer):
+    code = serializers.CharField(required=True)
 
     def create(self, validated_data):
-        
-        user = User.objects.filter(reset_pass_token = validated_data["code"]).first()
-        if not user: 
-            raise serializers.ValidationError({'detail':'user not found'})
-        
+        request = self.context.get('request')
+
+        user = User.objects.filter(reset_pass_token=validated_data["code"]).first()
+
+        if not user:
+            raise serializers.ValidationError({'detail': 'User not found'})
+
         if user.reset_pass_expire_date < timezone.now():
-            raise serializers.ValidationError({'message':'token is expired'})
+            raise serializers.ValidationError({'message': 'Token is expired'})
+
+        user.is_reset_verified = True 
         
-        if validated_data['password'] != validated_data['confirm_password']:
-            raise serializers.ValidationError({'detail':'the passwords not confirm'}) 
-        
-        user.set_password(validated_data['password'])
         user.save()
+        request.session['reset_user_id'] = user.id
+
         return {}
     
 
+User = get_user_model()
+
+class ConfirmResetPasswordSerializer(serializers.Serializer):
+    password = serializers.CharField(required=True, validators=[MinLengthValidator(8)])
+    confirm_password = serializers.CharField(required=True)
+
+    def validate(self, data):
+        if data['password'] != data['confirm_password']:
+            raise serializers.ValidationError({'detail': 'Passwords do not match'})
+        return data
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user_id = request.session.get('reset_user_id')
+
+        if not user_id:
+            raise serializers.ValidationError({'detail': 'Session expired or invalid. Please restart the reset process.'})
+
+        user = User.objects.filter(id=user_id).first()
+
+        if not user:
+            raise serializers.ValidationError({'detail': 'User not found'})
+
+        user.set_password(validated_data['password'])
+        user.reset_pass_token = ""
+        user.reset_pass_expire_date = None
+        user.save()
+
+        # Clear session
+        del request.session['reset_user_id']
+
+        return {}
+    
 #==================================================================================
 
 

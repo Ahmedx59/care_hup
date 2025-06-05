@@ -90,7 +90,7 @@ class PatientPastAppointmentsSerializer(serializers.ModelSerializer):
 
             "doctor_id": doctor.id,
             "doctor_name": doctor.user.get_full_name(),
-            "specialty": doctor.specialty.name if doctor.specialty else "No specialty",
+            "specialty": doctor.specialty if doctor.specialty else "No specialty",
             "image": image_url 
 
 

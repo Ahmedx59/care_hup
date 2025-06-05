@@ -288,7 +288,7 @@ class PatientPastAppointments(APIView):
         appointments = Appointment.objects.filter(
             patient=patient,
             date__lt=date.today()
-        ).select_related('doctor__user', 'doctor__specialty').order_by('-date', '-time')
+        ).select_related('doctor__user').order_by('-date', '-time')
 
         serializer = PatientPastAppointmentsSerializer(appointments, many=True, context={'request': request})
         return Response(serializer.data)
@@ -310,7 +310,7 @@ class PatientUpcomingAppointments(APIView):
         appointments = Appointment.objects.filter(
             patient=patient,
             date__gte=date.today()
-        ).select_related('doctor__user', 'doctor__specialty').order_by('date', 'time')
+        ).select_related('doctor__user').order_by('date', 'time')
 
         serializer = UpcomingAppointmentsSerializer(appointments, many=True, context={'request': request})
         return Response(serializer.data)

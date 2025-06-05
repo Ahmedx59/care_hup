@@ -21,6 +21,7 @@ from .serializers import (
     SignUpDoctorNurseSerializer ,
     SpecialtySerializer,
     UpdateProfileDoctorAndNurseSerializer,
+    ActivateResetPasswordSerializer
 )
 
 from users.models import User , DoctorNurseProfile ,PatientProfile, SpecialtyDoctor
@@ -85,10 +86,18 @@ class AuthUser(
         serializer.save()
         return Response({'detail':'check code on mail'})
     
-    @action(detail=False ,methods=['post'] ,serializer_class = ConfirmResetPasswordSerializer)
-    def confirm_reset_password(self,*args, **kwargs):
+    @action(detail=True ,methods=["post"] ,serializer_class = ActivateResetPasswordSerializer)
+    def active_reset_password(self,request , pk=None):
         data = self.request.data
-        serializer = self.get_serializer(data = data)
+        serializer = self.get_serializer(data = data ,  context={'request': request})
+        serializer.is_valid(raise_exception = True)
+        serializer.save()
+        return Response({'detail':'Code verified'})
+
+    @action(detail=False ,methods=['post'] ,serializer_class = ConfirmResetPasswordSerializer)
+    def confirm_reset_password(self,request):
+        data = self.request.data
+        serializer = self.get_serializer(data = data ,  context={'request': request})
         serializer.is_valid(raise_exception = True)
         serializer.save()
         return Response({'detail':'password change successfully'})
