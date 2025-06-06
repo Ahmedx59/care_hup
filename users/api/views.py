@@ -86,7 +86,7 @@ class AuthUser(
         serializer.save()
         return Response({'detail':'check code on mail'})
     
-    @action(detail=True ,methods=["post"] ,serializer_class = ActivateResetPasswordSerializer)
+    @action(detail=False ,methods=["post"] ,serializer_class = ActivateResetPasswordSerializer)
     def active_reset_password(self,request , pk=None):
         data = self.request.data
         serializer = self.get_serializer(data = data ,  context={'request': request})
