@@ -7,18 +7,13 @@ from users.models import DoctorNurseProfile
 
 class DoctorFilter(filters.FilterSet):
     
-    city = django_filters.CharFilter(field_name="city__name", lookup_expr="icontains")
-    city__governorate = django_filters.CharFilter(field_name="city__governorate__name", lookup_expr="icontains")
-    specialty = django_filters.CharFilter(field_name="specialty__name", lookup_expr="icontains")
-
     has_offer = django_filters.BooleanFilter(field_name="offer", method="filter_has_offer")
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte") 
     max_price = django_filters.NumberFilter(field_name="price" , lookup_expr="lte")
 
     class Meta:
         model = DoctorNurseProfile
-        fields = ("city", "city__governorate","specialty", "has_offer","min_price")
-
+        fields = ("city", "governorate","specialty", "has_offer","min_price")
 
     def filter_has_offer(self, queryset, name, value):
         if value == True:

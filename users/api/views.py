@@ -1,11 +1,11 @@
 from django.shortcuts import render , get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 
 from rest_framework import mixins , viewsets , status , serializers ,filters
 from rest_framework.decorators import action
 from rest_framework.response import Response 
 from rest_framework.permissions import AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView
-from django_filters.rest_framework import DjangoFilterBackend
 
 from .serializers import CustomTokenObtainPairSerializer
 from .serializers import (
@@ -178,8 +178,8 @@ class DoctorsViewSet(
     queryset = DoctorNurseProfile.objects.all()
     serializer_class = ListDoctorSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["city", "specialty","governorate"]
-    # filterset_class = DoctorFilter
+    # filterset_fields = ["city", "specialty","governorate","offer"]
+    filterset_class = DoctorFilter
     
 
     def get_serializer_class(self):
@@ -198,8 +198,8 @@ class NurseViewSet(
     queryset = DoctorNurseProfile.objects.all()
     serializer_class = ListNurseSerializer
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["city","governorate"]
-    # filterset_class = DoctorFilter
+    # filterset_fields = ["city","governorate"]
+    filterset_class = DoctorFilter
 
 
     def get_serializer_class(self):
