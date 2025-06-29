@@ -13,7 +13,7 @@ from .serializers import (
     AppointmentSerializer,
     PatientAppointmentSerializer,
     PatientPastAppointmentsSerializer,
-    UpcomingAppointmentsSerializer
+    UpcomingAppointmentsSerializer,
 )
 
 
@@ -174,6 +174,31 @@ class UpdateAvailableSlot(APIView):
             "message": "تم التحديث بنجاح",
             "data": serializer.data
         }, status=status.HTTP_200_OK)
+
+
+class CancelAppointment(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, appointment_id):
+        try:
+            appointment = Appointment.objects.get(id=appointment_id, patient__user=request.user)
+        except Appointment.DoesNotExist:
+            return Response({"error": "الحجز غير موجود أو غير مصرح به"}, status=status.HTTP_404_NOT_FOUND)
+
+        # لا يمكن إلغاء موعد سابق
+        if appointment.date < date.today():
+            return Response({"error": "هذا الموعد قد انتهى ولا يمكن إلغاؤه"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # إرجاع الموعد إلى المواعيد المتاحة
+        AvailableSlot.objects.create(
+            doctor=appointment.doctor,
+            date=appointment.date,
+            time=appointment.time
+        )
+
+        appointment.delete()
+        return Response({"message": "تم إلغاء الحجز القادم بنجاح"}, status=status.HTTP_200_OK)
+
 
 
 # ================ Patient Endpoints ================
@@ -412,4 +437,30 @@ class UpdateAppointment(APIView):
             "appointment": AppointmentSerializer(appointment).data
         })
     
-   
+
+class DeleteAvailableSlot(APIView):
+    """✅ إلغاء موعد متاح للطبيب (طالما لم يتم حجزه)"""
+    permission_classes = [IsAuthenticated, IsDoctor]
+
+    def delete(self, request, slot_id):
+        try:
+            slot = AvailableSlot.objects.get(id=slot_id, doctor__user=request.user)
+        except AvailableSlot.DoesNotExist:
+            return Response(
+                {"error": "الموعد غير موجود أو غير مصرح بحذفه"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # ✅ نتحقق إن محدش حجزه قبل ما نحذفه
+        if Appointment.objects.filter(
+            doctor=slot.doctor,
+            date=slot.date,
+            time=slot.time
+        ).exists():
+            return Response(
+                {"error": "لا يمكن حذف الموعد لأنه تم حجزه بالفعل"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        slot.delete()
+        return Response({"message": "تم حذف الموعد بنجاح"}, status=status.HTTP_200_OK)

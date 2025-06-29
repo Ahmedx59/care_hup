@@ -3,17 +3,21 @@ from .views import (
     AddAvailableSlots, DoctorAvailableSlots, BookAppointment,
     DoctorUpcomingAppointments, DoctorPastAppointments,
     PatientUpcomingAppointments, PatientPastAppointments,
-    UpdateAvailableSlot, UpdateAppointment
+    UpdateAvailableSlot, UpdateAppointment , CancelAppointment ,DeleteAvailableSlot
 )
 
 urlpatterns = [
     path('api/doctor/add_slots/', AddAvailableSlots.as_view(), name='add_slots'),  
+
+    path('slot/<int:slot_id>/cancel/', DeleteAvailableSlot.as_view(), name='cancel_available_slot'),
 
     path('doctor/<int:doctor_id>/available_slots/', DoctorAvailableSlots.as_view(), name='get_available_slots'),
 
     path('slot/<int:slot_id>/update/', UpdateAvailableSlot.as_view(), name='update_available_slot'),
 
     path('book_appointment/', BookAppointment.as_view(), name='book_appointment'),
+
+    path('appointment/<int:appointment_id>/cancel/', CancelAppointment.as_view(), name='cancel_appointment'),
 
     path('appointment/<int:appointment_id>/update/', UpdateAppointment.as_view(), name='update_appointment'),
 
