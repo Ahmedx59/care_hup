@@ -40,7 +40,7 @@ class AuthUser(
 
 
     def get_permissions(self):
-        if self.action in ("create","activate","sign_up_patient","sign_up_doctor_nurse",):
+        if self.action in ("create","activate","sign_up_patient","sign_up_doctor_nurse","reset_password","active_reset_password","confirm_reset_password"):
             return [AllowAny()]
         return super().get_permissions()
 
