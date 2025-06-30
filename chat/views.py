@@ -8,6 +8,7 @@ from .serializers import ChatSerializer, MessageSerializer
 from users.models import User, DoctorNurseProfile, PatientProfile
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from notifications.tasks import send_new_chat_notification
 
 class StartChatView(APIView):
     permission_classes = [IsAuthenticated]
@@ -25,7 +26,6 @@ class StartChatView(APIView):
     def post(self, request):
         user = request.user
 
-        # التحقق من أن المستخدم الحالي هو مريض
         if not hasattr(user, 'patient_profile'):
             return Response(
                 {"error": "Only patients can start a chat."},
@@ -35,17 +35,14 @@ class StartChatView(APIView):
         target_id = request.data.get('target_id')
 
         try:
-            # الحصول على ملف الطبيب/الممرض
             target_profile = get_object_or_404(DoctorNurseProfile, id=target_id)
 
-            # إنشاء المحادثة
             chat, created = Chat.objects.get_or_create(
                 patient=user.patient_profile,
                 doctor=target_profile if target_profile.user.user_type == User.User_Type.DOCTOR else None,
                 nurse=target_profile if target_profile.user.user_type == User.User_Type.NURSE else None
             )
 
-            # إضافة المشاركين إلى المحادثة
             chat.participants.add(user, target_profile.user)
 
             return Response(
@@ -77,20 +74,21 @@ class SendMessageView(APIView):
         
         chat = get_object_or_404(Chat, id=chat_id)
 
-        # التحقق من أن المستخدم الحالي هو أحد المشاركين في المحادثة
         if request.user not in chat.participants.all():
             return Response(
                 {"error": "You are not a participant in this chat."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
-        # إنشاء الرسالة
         message = Message.objects.create(
             chat=chat,
             sender=request.user,
             content=content
         )
         
+        # إرسال الإشعار في الخلفية باستخدام Celery
+        send_new_chat_notification.delay(message.id)
+
         return Response(MessageSerializer(message).data, status=status.HTTP_201_CREATED)
 
 
@@ -112,6 +110,7 @@ class ChatListView(APIView):
             many=True,
             context={'request': request}
         ).data)
+
 
 class ChatHistoryView(APIView):
     permission_classes = [IsAuthenticated]
