@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+import os
+from celery import Celery
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,7 +41,8 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'drf_yasg',
 
-
+    'notifications',
+    'django_celery_beat',
 
 
     'rest_framework',
@@ -179,3 +182,16 @@ EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 # EMAIL_USE_SSL = False
 
 
+# إعدادات Celery
+CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+CELERY_TIMEZONE = 'Africa/Cairo'
+CELERY_BEAT_SCHEDULE = {
+    'send-appointment-reminders': {
+        'task': 'notifications.tasks.send_appointment_reminders',
+        'schedule': 300,  # كل 5 دقائق
+    },
+}
+
+# إعدادات Firebase
+FIREBASE_CREDENTIALS = os.path.join(BASE_DIR, 'service_account_key.json')

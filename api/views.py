@@ -6,6 +6,8 @@ from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework import serializers
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from notifications.tasks import send_push_notification_task, send_new_appointment_notification
+from notifications.tasks import send_cancellation_notification  
 from .models import AvailableSlot, Appointment
 from users.models import DoctorNurseProfile, PatientProfile, User
 from .serializers import (
@@ -181,11 +183,13 @@ class CancelAppointment(APIView):
 
     def delete(self, request, appointment_id):
         try:
-            appointment = Appointment.objects.get(id=appointment_id, patient__user=request.user)
+            appointment = Appointment.objects.select_related('doctor__user', 'patient__user').get(
+                id=appointment_id,
+                patient__user=request.user
+            )
         except Appointment.DoesNotExist:
             return Response({"error": "الحجز غير موجود أو غير مصرح به"}, status=status.HTTP_404_NOT_FOUND)
 
-        # لا يمكن إلغاء موعد سابق
         if appointment.date < date.today():
             return Response({"error": "هذا الموعد قد انتهى ولا يمكن إلغاؤه"}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -196,12 +200,24 @@ class CancelAppointment(APIView):
             time=appointment.time
         )
 
+        # 👇 حفظ البيانات المهمة قبل الحذف
+        appointment_data = {
+            'doctor_id': appointment.doctor.user.id,
+            'patient_name': appointment.patient.user.get_full_name() or appointment.patient.user.username,
+            'date': str(appointment.date),
+            'time': str(appointment.time),
+            'appointment_id': appointment.id
+        }
+
+        # حذف الحجز
         appointment.delete()
+
+        # إرسال إشعار إلى الدكتور بالخلفية
+        send_cancellation_notification.delay(appointment_data)
+
         return Response({"message": "تم إلغاء الحجز القادم بنجاح"}, status=status.HTTP_200_OK)
-
-
-
 # ================ Patient Endpoints ================
+
 class BookAppointment(generics.CreateAPIView):
     """✅ حجز موعد جديد"""
     queryset = Appointment.objects.all()
@@ -231,7 +247,7 @@ class BookAppointment(generics.CreateAPIView):
             date=date, 
             time=time
         ).first()
-        
+
         if not slot:
             raise serializers.ValidationError({"error": "الموعد غير متاح"})
 
@@ -242,7 +258,32 @@ class BookAppointment(generics.CreateAPIView):
         ).count() >= 3:
             raise serializers.ValidationError({"error": "الموعد مكتمل"})
 
-        serializer.save(doctor=doctor, patient=patient)
+        # حفظ الموعد
+        appointment = serializer.save(doctor=doctor, patient=patient)
+
+        # === إشعار بالخلفية باستخدام Celery ===
+        # 1. للمريض
+        send_push_notification_task.delay(
+            user_id=self.request.user.id,
+            title="تم حجز الموعد",
+            body=f"تم حجز موعدك مع د/ {doctor.user.get_full_name() or doctor.user.username} في {date} الساعة {time}",
+            data={
+                'type': 'appointment_confirmation',
+                'appointment_id': str(appointment.id)
+            }
+        )
+
+        # 2. للطبيب
+        send_push_notification_task.delay(
+            user_id=doctor.user.id,
+            title="حجز جديد",
+            body=f"قام {patient.user.get_full_name() or patient.user.username} بحجز موعد جديد في {date} الساعة {time}",
+            data={
+                'type': 'new_appointment',
+                'appointment_id': str(appointment.id)
+            }
+        )
+        # =====================================
 
         if Appointment.objects.filter(
             doctor=doctor, 

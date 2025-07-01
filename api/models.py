@@ -16,6 +16,7 @@ class Appointment(models.Model):
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)
     date = models.DateField()
     time = models.TimeField()
+    reminder_sent = models.BooleanField(default=False)  
 
     def __str__(self):
         return f"{self.patient.user.username} with {self.doctor.user.username} on {self.date} at {self.time}"
