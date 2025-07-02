@@ -15,21 +15,25 @@ class RegisterDeviceView(APIView):
     @swagger_auto_schema(
         request_body=FCMDeviceSerializer,
         responses={
-            201: "تم تسجيل الجهاز بنجاح",
-            400: "طلب غير صالح"
+            201: openapi.Response("Device registered successfully"),
+            400: openapi.Response("Bad request")
         }
     )
     def post(self, request):
-        serializer = FCMDeviceSerializer(data=request.data)
+        serializer = FCMDeviceSerializer(data=request.data, context={'request': request})
+        
         if serializer.is_valid():
-            # حذف التسجيل القديم إن وجد
-            FCMDevice.objects.filter(
-                registration_id=serializer.validated_data['registration_id']
-            ).delete()
+            registration_id = serializer.validated_data['registration_id']
 
+            # حذف أي جهاز قديم بنفس registration_id
+            FCMDevice.objects.filter(registration_id=registration_id).delete()
+
+            # تسجيل جهاز جديد
             FCMDevice.objects.create(
                 user=request.user,
                 **serializer.validated_data
             )
+
             return Response({"status": "success"}, status=status.HTTP_201_CREATED)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
