@@ -265,8 +265,8 @@ class BookAppointment(generics.CreateAPIView):
         # 1. للمريض
         send_push_notification_task.delay(
             user_id=self.request.user.id,
-            title="تم حجز الموعد",
-            body=f"تم حجز موعدك مع د/ {doctor.user.get_full_name() or doctor.user.username} في {date} الساعة {time}",
+            title="Appointment Confirmed",
+            body=f"Your appointment with Dr. {doctor.user.get_full_name() or doctor.user.username} is scheduled on {date} at {time}",
             data={
                 'type': 'appointment_confirmation',
                 'appointment_id': str(appointment.id)
@@ -276,8 +276,8 @@ class BookAppointment(generics.CreateAPIView):
         # 2. للطبيب
         send_push_notification_task.delay(
             user_id=doctor.user.id,
-            title="حجز جديد",
-            body=f"قام {patient.user.get_full_name() or patient.user.username} بحجز موعد جديد في {date} الساعة {time}",
+            title="New Appointment",
+            body=f"{patient.user.get_full_name() or patient.user.username} booked a new appointment on {date} at {time}",
             data={
                 'type': 'new_appointment',
                 'appointment_id': str(appointment.id)
