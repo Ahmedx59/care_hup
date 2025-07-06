@@ -269,11 +269,9 @@ class UserRetSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             "username",
-            "email",
             "gender",
             "phone_number",
             "birth_date",
-            "image",
         )
 
 class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
@@ -300,6 +298,7 @@ class UpdateUserSerializer(serializers.ModelSerializer):
             "gender",
             "phone_number",
             "birth_date",
+            "image",
         ) 
 
 class UpdateProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
@@ -348,7 +347,7 @@ class UpdateProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
 
 
 class PatientProfileSerializer(serializers.ModelSerializer):
-    user = UserRetSerializer()
+    user = UpdateUserSerializer()
 
     class Meta:
         model = PatientProfile
@@ -357,6 +356,17 @@ class PatientProfileSerializer(serializers.ModelSerializer):
             "id",
             "chronic_diseases",
         )
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop("user", None)  # Extract user data from request
+
+        if user_data:
+            # Update the related user fields
+            for attr, value in user_data.items():
+                setattr(instance.user, attr, value)
+            instance.user.save()
+
+        return super().update(instance, validated_data)
     
 
 class ListDoctorSerializer(serializers.ModelSerializer):
