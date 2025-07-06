@@ -272,6 +272,10 @@ class UserRetSerializer(serializers.ModelSerializer):
             "gender",
             "phone_number",
             "birth_date",
+            "image",
+
+
+
         )
 
 class ProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
