@@ -146,7 +146,7 @@ class UserProfile(viewsets.GenericViewSet):
         return Response(serializer.data)
     
     @action(detail=False , methods=['put'], serializer_class=UpdateProfileDoctorAndNurseSerializer)
-    def edit_my_profile(self , request , *args, **kwargs):
+    def edit_Doctor_nurse_profile(self , request , *args, **kwargs):
         user = request.user
         data = request.data
         
@@ -156,6 +156,19 @@ class UserProfile(viewsets.GenericViewSet):
         # if user.user_type == User.User_Type.PATIENT:
         #     print(user,'*'*100)
         #     serializer = PatientProfileSerializer(data = data)
+
+            serializer.is_valid(raise_exception = True)
+            serializer.save()
+
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=["put"], serializer_class=PatientProfileSerializer)
+    def edit_patient_profile(self, request , *args, **kwargs):
+        user = request.user
+        data = request.data
+
+        if user.user_type == User.User_Type.PATIENT:
+            serializer = self.get_serializer(user.patient_profile,data = data)
 
             serializer.is_valid(raise_exception = True)
             serializer.save()
