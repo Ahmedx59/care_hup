@@ -269,6 +269,7 @@ class UserRetSerializer(serializers.ModelSerializer):
         model = User
         fields = (
             "username",
+            "email",
             "gender",
             "phone_number",
             "birth_date",
@@ -348,9 +349,19 @@ class UpdateProfileDoctorAndNurseSerializer(serializers.ModelSerializer):
 
     #     print(instance.user.email)
     #     return instance
-
-
 class PatientProfileSerializer(serializers.ModelSerializer):
+    user = UserRetSerializer()
+
+    class Meta:
+        model = PatientProfile
+        fields = (
+            "user",
+            "id",
+            "chronic_diseases",
+        )
+
+
+class EditPatientProfileSerializer(serializers.ModelSerializer):
     user = UpdateUserSerializer()
 
     class Meta:

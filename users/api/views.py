@@ -15,7 +15,8 @@ from .serializers import (
     ResetPasswordSerializer , 
     ConfirmResetPasswordSerializer , 
     ProfileDoctorAndNurseSerializer ,
-    PatientProfileSerializer , 
+    PatientProfileSerializer,
+    EditPatientProfileSerializer , 
     ListDoctorSerializer ,
     ListNurseSerializer ,
     SignUpDoctorNurseSerializer ,
@@ -117,7 +118,7 @@ class UserProfile(viewsets.GenericViewSet):
     #     serializer = self.get_serializer(doctor_or_nurse)
     #     return Response(serializer.data)
     
-    @action(detail = True , methods=['get'] , serializer_class = PatientProfileSerializer)
+    @action(detail = True , methods=['get'] , serializer_class = EditPatientProfileSerializer)
     def Patient(self ,*args, **kwargs):
         pk = self.kwargs['pk']
         Patient = get_object_or_404(PatientProfile , id =pk)
@@ -127,7 +128,7 @@ class UserProfile(viewsets.GenericViewSet):
         # if not Patient:
         #     raise serializers.ValidationError({'error':'Patient not found'})
         
-        serializer = PatientProfileSerializer(Patient)
+        serializer = EditPatientProfileSerializer(Patient)
         return Response(serializer.data)
 
 
@@ -152,17 +153,13 @@ class UserProfile(viewsets.GenericViewSet):
         
         if user.user_type in [User.User_Type.DOCTOR , User.User_Type.NURSE]:
             serializer = self.get_serializer(user.doctor_profile, data = data)
-        
-        # if user.user_type == User.User_Type.PATIENT:
-        #     print(user,'*'*100)
-        #     serializer = PatientProfileSerializer(data = data)
-
+            
             serializer.is_valid(raise_exception = True)
             serializer.save()
 
         return Response(serializer.data)
     
-    @action(detail=False, methods=["put"], serializer_class=PatientProfileSerializer)
+    @action(detail=False, methods=["put"], serializer_class=EditPatientProfileSerializer)
     def edit_patient_profile(self, request , *args, **kwargs):
         user = request.user
         data = request.data
@@ -228,7 +225,7 @@ class ProfileViewSet(
     viewsets.GenericViewSet):
 
     queryset = PatientProfile.objects.all()
-    serializer_class = PatientProfileSerializer
+    serializer_class = EditPatientProfileSerializer
 
     def get_serializer(self, *args, **kwargs):
 
