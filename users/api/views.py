@@ -9,7 +9,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 
 from .serializers import CustomTokenObtainPairSerializer
 from .serializers import (
-    SingUpSerializer , 
+    SingUpPatientSerializer , 
     UserActivateSerializers , 
     ChangePasswordSerializer , 
     ResetPasswordSerializer , 
@@ -37,7 +37,7 @@ class AuthUser(
     viewsets.GenericViewSet):
 
     queryset = User.objects.all()
-    serializer_class = SingUpSerializer
+    serializer_class = SingUpPatientSerializer
 
 
     def get_permissions(self):

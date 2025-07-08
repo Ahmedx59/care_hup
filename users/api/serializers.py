@@ -25,7 +25,7 @@ class SpecialtySerializer(serializers.ModelSerializer):
         model = SpecialtyDoctor
         fields = '__all__'
 
-class SingUpSerializer(serializers.ModelSerializer):
+class SingUpPatientSerializer(serializers.ModelSerializer):
     username=serializers.CharField(required = True)
     email = serializers.CharField(required = True)
     password = serializers.CharField(write_only = True , validators=[MinLengthValidator(8)] , required = True)
