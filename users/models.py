@@ -38,6 +38,15 @@ class User(AbstractUser):
 
 
 class DoctorNurseProfile(models.Model):
+    class SubscriptionStatus(models.TextChoices):
+        NOT_PAID = 'NOT_PAID', 'لم يتم الدفع'
+        PAID = 'PAID', 'تم الدفع'
+        EXPIRED = 'EXPIRED', 'انتهت الصلاحية'
+        CANCELLED = 'CANCELLED', 'تم الالغاء'
+        PENDING = 'PENDING','قيد الانتظار'
+
+    subscription_status = models.CharField(max_length=20,choices= SubscriptionStatus.choices,default= SubscriptionStatus.PENDING,)
+    paypal_order_id = models.CharField(max_length=100, blank=True, null=True, unique=True)
     user = models.OneToOneField(User , on_delete=models.CASCADE , related_name='doctor_profile')
     price = models.IntegerField( blank=True, null=True)
     experience_year = models.IntegerField(blank=True, null=True)

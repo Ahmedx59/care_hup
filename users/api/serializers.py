@@ -32,7 +32,7 @@ class SingUpPatientSerializer(serializers.ModelSerializer):
     confirm_password = serializers.CharField(required = True , write_only = True)
     user_type = serializers.ChoiceField(choices=User.User_Type.choices , required = True)
     gender = serializers.ChoiceField(choices=User.GenderType.choices , required = True)
-    phone_number = serializers.IntegerField(required = True)
+    phone_number = serializers.CharField(allow_blank=True , required = False)
     birth_date = serializers.DateTimeField(required = True)
     image = serializers.ImageField()
 
@@ -57,6 +57,7 @@ class SingUpPatientSerializer(serializers.ModelSerializer):
         validated_data['activation_code'] = randint(1000,9999)
 
         chronic_diseases= validated_data.pop('chronic_diseases')
+        print(chronic_diseases,"="*100)
 
         send_mail(
             f"Activation Code ",
@@ -68,6 +69,9 @@ class SingUpPatientSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data)
         user_profile = PatientProfile.objects.filter(user = user).first()
         user_profile.chronic_diseases = chronic_diseases
+
+        user_profile.save()
+
         
         return {}
     
@@ -130,6 +134,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.card = card
         user_profile.services = services
         user_profile.governorate = governorate
+        user_profile.subscription_status = DoctorNurseProfile.subscription_status.PENDING
 
         user_profile.save()
 

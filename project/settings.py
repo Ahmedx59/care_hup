@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-g)6qxa@ka^)4yvk^^vmn8gvo_%5upalh5x%^25gs(%7+gkt^g0
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2','192.168.1.10','192.168.1.12'] 
+ALLOWED_HOSTS = ['localhost', '127.0.0.1', '10.0.2.2','192.168.1.10','192.168.1.12','2d4850971ef1.ngrok-free.app'] 
 
 
 # Application definition
@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'api',
     'chat',
     'hospital',
+    'payment_subscribe',
     ]
 AUTH_USER_MODEL = 'users.User'
 
@@ -195,3 +196,8 @@ CELERY_BEAT_SCHEDULE = {
 
 # إعدادات Firebase
 FIREBASE_CREDENTIALS = os.path.join(BASE_DIR, 'service_account_key.json')
+
+
+PAYPAL_CLIENT_ID = 'AUNZcYg9ld_1M0RgAN92QDzCIllHpyxmXj_MO3G76_idvFLgexfX8eRPIc0eTsqldd-Ez4tZGVKKqHve'
+PAYPAL_CLIENT_SECRET = 'EJy4agJpOaKl4YSVAFtPz4UShAnQZuUQRtEeryCw4Fi3jOTW5AuA1z_FKkQJCnS_mwoEkX4b75SyVal0'
+PAYPAL_BASE_URL = 'https://api-m.sandbox.paypal.com'
