@@ -88,7 +88,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = DoctorNurseProfile
-        exclude = ('user','offer',)
+        exclude = ('user','offer','paypal_order_id','subscription_status',)
              
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -134,7 +134,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.card = card
         user_profile.services = services
         user_profile.governorate = governorate
-        user_profile.subscription_status = DoctorNurseProfile.subscription_status.PENDING
+        # user_profile.subscription_status = DoctorNurseProfile.subscription_status.PENDING
 
         user_profile.save()
 
