@@ -34,7 +34,7 @@ class SingUpPatientSerializer(serializers.ModelSerializer):
     gender = serializers.ChoiceField(choices=User.GenderType.choices , required = True)
     phone_number = serializers.CharField(allow_blank=True , required = False)
     birth_date = serializers.DateTimeField(required = True)
-    image = serializers.ImageField()
+    # image = serializers.ImageField()
 
     class Meta:
         model = PatientProfile
