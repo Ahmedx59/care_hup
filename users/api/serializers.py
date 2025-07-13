@@ -57,7 +57,6 @@ class SingUpPatientSerializer(serializers.ModelSerializer):
         validated_data['activation_code'] = randint(1000,9999)
 
         chronic_diseases= validated_data.pop('chronic_diseases')
-        print(chronic_diseases,"="*100)
 
         send_mail(
             f"Activation Code ",
@@ -88,7 +87,7 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = DoctorNurseProfile
-        exclude = ('user','offer','paypal_order_id','subscription_status',)
+        exclude = ('user','offer',)
              
     def validate(self, attrs):
         if attrs['password'] != attrs['confirm_password']:
@@ -134,7 +133,6 @@ class SignUpDoctorNurseSerializer(serializers.ModelSerializer):
         user_profile.card = card
         user_profile.services = services
         user_profile.governorate = governorate
-        # user_profile.subscription_status = DoctorNurseProfile.subscription_status.PENDING
 
         user_profile.save()
 
